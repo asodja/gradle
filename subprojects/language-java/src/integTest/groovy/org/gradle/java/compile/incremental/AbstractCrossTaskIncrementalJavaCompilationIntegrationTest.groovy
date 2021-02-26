@@ -16,7 +16,6 @@
 
 package org.gradle.java.compile.incremental
 
-import groovy.transform.NotYetImplemented
 import org.gradle.integtests.fixtures.CompiledLanguage
 import org.gradle.util.Requires
 import org.gradle.util.TestPrecondition
@@ -26,7 +25,8 @@ abstract class AbstractCrossTaskIncrementalJavaCompilationIntegrationTest extend
     CompiledLanguage language = CompiledLanguage.JAVA
 
     @Unroll
-    def "change in an upstream class with non-private constant causes rebuild if same constant is used (#constantType)"() {
+    @Requires(TestPrecondition.JDK9_OR_LATER)
+    def "change in an upstream class with non-private constant does not rebuild if same constant is used (#constantType)"() {
         source api: ["class A {}", "class B { final static $constantType x = $constantValue; }"], impl: ["class ImplA extends A { $constantType foo() { return $constantValue; }}", "class ImplB {int foo() { return 2; }}"]
         impl.snapshot { run language.compileTaskName }
 
@@ -35,23 +35,142 @@ abstract class AbstractCrossTaskIncrementalJavaCompilationIntegrationTest extend
         run "impl:${language.compileTaskName}"
 
         then:
-        // impl.recompiledClasses('ImplA') //  Can re-enable with compiler plugins. See gradle/gradle#1474
-        impl.recompiledClasses('ImplA', 'ImplB')
+        impl.recompiledClasses()
 
         where:
         constantType | constantValue
         'boolean'    | 'false'
-        'byte'       | '(byte) 125'
-        'short'      | '(short) 666'
         'int'        | '55542'
-        'long'       | '5L'
-        'float'      | '6f'
-        'double'     | '7d'
         'String'     | '"foo"'
         'String'     | '"foo" + "bar"'
     }
 
-    // This test describes the current behavior, not the intended one, expressed by the test just above
+    @Unroll
+    @Requires(TestPrecondition.JDK9_OR_LATER)
+    def "constant value change in an upstream class causes rebuild if referenced at constant declaration (#constantType)"() {
+        source api: ["class A {}", "class B { final static $constantType x = $constantValue; }"], impl: ["class X { final static $constantType v = B.x;  }", "class Y {}"]
+        impl.snapshot { run language.compileTaskName }
+
+        when:
+        source api: ["class B { final static $constantType x = $newValue; /* change value */ ; void blah() { /* avoid flakiness by changing compiled file length*/ } }"]
+        run "impl:${language.compileTaskName}"
+
+        then:
+        impl.recompiledClasses('X')
+
+        where:
+        constantType | constantValue   | newValue
+        'boolean'    | 'false'         | 'true'
+        'int'        | '55542'         | '444'
+        'String'     | '"foo"'         | '"bar"'
+        'String'     | '"foo" + "bar"' | '"bar"'
+    }
+
+    @Unroll
+    @Requires(TestPrecondition.JDK9_OR_LATER)
+    def "constant value change in an upstream class causes rebuild if referenced in method body (#constantType)"() {
+        source api: ["class A {}", "class B { final static $constantType x = $constantValue; }"], impl: ["class X { $constantType method() { return B.x; }  }", "class Y {}"]
+        impl.snapshot { run language.compileTaskName }
+
+        when:
+        source api: ["class B { final static $constantType x = $newValue; /* change value */ ; void blah() { /* avoid flakiness by changing compiled file length*/ } }"]
+        run "impl:${language.compileTaskName}"
+
+        then:
+        impl.recompiledClasses('X')
+
+        where:
+        constantType | constantValue   | newValue
+        'boolean'    | 'false'         | 'true'
+        'int'        | '55542'         | '444'
+        'String'     | '"foo"'         | '"bar"'
+        'String'     | '"foo" + "bar"' | '"bar"'
+    }
+
+    @Unroll
+    @Requires(TestPrecondition.JDK9_OR_LATER)
+    def "constant value change in an upstream class cause rebuild if inherited (#constantType)"() {
+        source api: ["class A {}", "class B { final static $constantType x = $constantValue; }"], impl: ["class X extends B { }", "class Y { }", "class Z { }"]
+        impl.snapshot { run language.compileTaskName }
+
+        when:
+        source api: ["class B { final static $constantType x = $newValue; /* change value */ ; void blah() { /* avoid flakiness by changing compiled file length*/ } }"]
+        run "impl:${language.compileTaskName}"
+
+        then:
+        impl.recompiledClasses('X')
+
+        where:
+        constantType | constantValue   | newValue
+        'boolean'    | 'false'         | 'true'
+        'byte'       | '(byte) 125'    | '(byte) 126'
+        'short'      | '(short) 666'   | '(short) 555'
+        'int'        | '55542'         | '444'
+        'long'       | '5L'            | '689L'
+        'float'      | '6f'            | '6.5f'
+        'double'     | '7d'            | '7.2d'
+        'String'     | '"foo"'         | '"bar"'
+        'String'     | '"foo" + "bar"' | '"bar"'
+    }
+
+
+    @Unroll
+    @Requires(TestPrecondition.JDK9_OR_LATER)
+    // We cannot track where is constant located
+    def "class change in an upstream class cause rebuild if constant is referenced (#constantType)"() {
+        source api: ["class A {}", "class B { final static $constantType x = $constantValue; }"], impl: ["class X { $constantType method() { return B.x; } }", "class Y { }", "class Z { }"]
+        impl.snapshot { run language.compileTaskName }
+
+        when:
+        source api: ["class B { final static $constantType x = $constantValue; void blah() {  } }"]
+        run "impl:${language.compileTaskName}"
+
+        then:
+        impl.recompiledClasses('X')
+
+        where:
+        constantType | constantValue
+        'boolean'    | 'false'
+        'int'        | '55542'
+        'String'     | '"foo"'
+        'String'     | '"foo" + "bar"'
+    }
+
+    @Unroll
+    @Requires(TestPrecondition.JDK9_OR_LATER)
+    def "constant value change in an upstream class causes rebuild if inherited constant value is referenced in another class (#constantType)"() {
+        source api: ["class A {}", "class B { final static $constantType x = $constantValue; }"], impl: ["class X extends B { }", "class Y {$constantType foo() { return X.x; }}", "class Z { }"]
+        impl.snapshot { run language.compileTaskName }
+
+        when:
+        source api: ["class B { final static $constantType x = $newValue; /* change value */ ; void blah() { /* avoid flakiness by changing compiled file length*/ } }"]
+        run "impl:${language.compileTaskName}"
+
+        then:
+        impl.recompiledClasses('X', 'Y')
+
+        where:
+        constantType | constantValue   | newValue
+        'boolean'    | 'false'         | 'true'
+        'int'        | '55542'         | '444'
+        'String'     | '"foo"'         | '"bar"'
+        'String'     | '"foo" + "bar"' | '"bar"'
+    }
+
+    @Requires(TestPrecondition.JDK9_OR_LATER)
+    def "deletion of jar with non-private constant causes compilation failure if constant is used"() {
+        source api: ["class A { public final static int x = 1; }"], impl: ["class X { int x() { return A.x;} }", "class Y {}"]
+        impl.snapshot { run language.compileTaskName }
+
+        when:
+        clearImplProjectDependencies()
+        fails "impl:${language.compileTaskName}"
+
+        then:
+        impl.noneRecompiled()
+    }
+
+    @Requires(TestPrecondition.JDK7_OR_EARLIER)
     def "changing an unused non-private constant causes full rebuild"() {
         println(buildFile.text)
         source api: ["class A {}", "class B { final static int x = 1; }"], impl: ["class ImplA extends A {}", "class ImplB extends B {}"]
@@ -65,7 +184,7 @@ abstract class AbstractCrossTaskIncrementalJavaCompilationIntegrationTest extend
         impl.recompiledClasses('ImplA', 'ImplB')
     }
 
-    @NotYetImplemented
+    @Requires(TestPrecondition.JDK9_OR_LATER)
     //  Can re-enable with compiler plugins. See gradle/gradle#1474
     def "changing an unused non-private constant doesn't cause full rebuild"() {
         source api: ["class A {}", "class B { final static int x = 1; }"], impl: ["class ImplA extends A {}", "class ImplB extends B {}"]
@@ -143,6 +262,7 @@ abstract class AbstractCrossTaskIncrementalJavaCompilationIntegrationTest extend
         result.hasErrorOutput("package a is not visible")
     }
 
+    @Requires(TestPrecondition.JDK8_OR_EARLIER)
     def "recompiles in case of conflicting changing constant values"() {
         source api: ["class A { final static int x = 3; }", "class B { final static int x = 3; final static int y = -2; }"],
             impl: ["class X { int foo() { return 3; }}", "class Y {int foo() { return -2; }}"]
@@ -155,5 +275,20 @@ abstract class AbstractCrossTaskIncrementalJavaCompilationIntegrationTest extend
 
         then:
         impl.recompiledClasses('X', 'Y')
+    }
+
+    @Requires(TestPrecondition.JDK9_OR_LATER)
+    def "does not recompile in case of conflicting changing constant values"() {
+        source api: ["class A { final static int x = 3; }", "class B { final static int x = 3; final static int y = -2; }"],
+            impl: ["class X { int foo() { return 3; }}", "class Y {int foo() { return -2; }}"]
+        impl.snapshot { run language.compileTaskName }
+
+        when:
+        source api: ["class B { final static int x = 3 ; final static int y = -3;  void blah() { /*  change irrelevant to constant value x */ } }"]
+        source api: ["class A { final static int x = 2 ; final static int y = -2;  void blah() { /*  change irrelevant to constant value y */ } }"]
+        run "impl:${language.compileTaskName}"
+
+        then:
+        impl.recompiledClasses()
     }
 }

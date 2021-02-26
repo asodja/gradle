@@ -109,10 +109,11 @@ public class ClassDependenciesVisitor extends ClassVisitor {
                     continue;
                 }
                 String name = type.getClassName();
-                // Any class that hasn't been added yet, is used in method bodies, which are implementation details and not visible as an "API"1
-                if (!accessibleTypes.contains(name)) {
-                    maybeAddDependentType(privateTypes, name);
-                }
+                // CONSTANT_Class entry can have a reference by
+                // inlined constant as "redundant type", and we can't know
+                // if this type is used in method or in some public constant
+                // For implementation info check: https://bugs.openjdk.java.net/browse/JDK-7153958
+                maybeAddDependentType(accessibleTypes, name);
             }
         }
     }
