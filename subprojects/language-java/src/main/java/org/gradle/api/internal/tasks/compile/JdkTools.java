@@ -161,6 +161,7 @@ public class JdkTools {
             ensureCompilerTask();
             return DirectInstantiator.instantiate(incrementalCompileTaskClass, task,
                 (Function<File, Optional<String>>) file -> compilationSourceDirs.relativize(file),
+                (Consumer<Map<String, Collection<String>>>) mapping -> SourceClassesMappingFileAccessor.writeSourceClassesMappingFile(mappingFile, mapping),
                 (Consumer<Map<String, Collection<String>>>) mapping -> SourceClassesMappingFileAccessor.writeSourceClassesMappingFile(mappingFile, mapping));
         }
     }
