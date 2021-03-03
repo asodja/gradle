@@ -56,7 +56,6 @@ public class IncrementalCompileTask implements JavaCompiler.CompilationTask {
         this.constantsConsumer = constantsConsumer;
         if (delegate instanceof JavacTask) {
             this.delegate = (JavacTask) delegate;
-            delegate.call()
         } else {
             throw new UnsupportedOperationException("Unexpected Java compile task : " + delegate.getClass().getName());
         }
