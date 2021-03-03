@@ -32,6 +32,7 @@ import org.gradle.api.internal.tasks.compile.incremental.classpath.ClasspathEntr
 import org.gradle.api.internal.tasks.compile.incremental.classpath.ClasspathEntrySnapshotter;
 import org.gradle.api.internal.tasks.compile.incremental.classpath.ClasspathSnapshotFactory;
 import org.gradle.api.internal.tasks.compile.incremental.classpath.ClasspathSnapshotMaker;
+import org.gradle.api.internal.tasks.compile.incremental.recomp.ConstantsMappingProvider;
 import org.gradle.api.internal.tasks.compile.incremental.recomp.PreviousCompilationOutputAnalyzer;
 import org.gradle.api.internal.tasks.compile.incremental.recomp.PreviousCompilationStore;
 import org.gradle.api.internal.tasks.compile.incremental.recomp.RecompilationSpecProvider;
@@ -60,7 +61,8 @@ public class IncrementalCompilerFactory {
         this.fileHasher = fileHasher;
     }
 
-    public <T extends JavaCompileSpec> Compiler<T> makeIncremental(CleaningJavaCompiler<T> cleaningJavaCompiler, String taskPath, FileTree sources, RecompilationSpecProvider recompilationSpecProvider) {
+    public <T extends JavaCompileSpec> Compiler<T> makeIncremental(CleaningJavaCompiler<T> cleaningJavaCompiler, String taskPath, FileTree sources, ConstantsMappingProvider constantsMappingProvider,
+                                                                   RecompilationSpecProvider recompilationSpecProvider) {
         TaskScopedCompileCaches compileCaches = createCompileCaches(taskPath);
         Compiler<T> rebuildAllCompiler = createRebuildAllCompiler(cleaningJavaCompiler, sources);
         ClassDependenciesAnalyzer analyzer = new CachingClassDependenciesAnalyzer(new DefaultClassDependenciesAnalyzer(interner), compileCaches.getClassAnalysisCache());

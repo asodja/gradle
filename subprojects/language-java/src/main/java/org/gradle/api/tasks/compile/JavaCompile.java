@@ -37,6 +37,8 @@ import org.gradle.api.internal.tasks.compile.HasCompileOptions;
 import org.gradle.api.internal.tasks.compile.JavaCompileSpec;
 import org.gradle.api.internal.tasks.compile.SourceClassesMappingFileAccessor;
 import org.gradle.api.internal.tasks.compile.incremental.IncrementalCompilerFactory;
+import org.gradle.api.internal.tasks.compile.incremental.recomp.ConstantsMappingProvider;
+import org.gradle.api.internal.tasks.compile.incremental.recomp.DefaultConstantsMappingProvider;
 import org.gradle.api.internal.tasks.compile.incremental.recomp.DefaultSourceFileClassNameConverter;
 import org.gradle.api.internal.tasks.compile.incremental.recomp.FileNameDerivingClassNameConverter;
 import org.gradle.api.internal.tasks.compile.incremental.recomp.IncrementalCompilationResult;
@@ -180,13 +182,21 @@ public class JavaCompile extends AbstractCompile implements HasCompileOptions {
 
         // Read constants mapping
         File constantsMappingFile = getConstantsMappingFile();
-        Multimap<String, String> constantsMapping = (isUsingCliCompiler) ? null : ConstantsMappingFileAccessor.readConstantsClassesMappingFile(constantsMappingFile);
+        ConstantsMappingProvider constantsMappingProvider;
+        Multimap<String, String> constantsMapping;
+        if (isUsingCliCompiler) {
+            constantsMapping = null;
+            constantsMappingProvider = null;
+        } else {
+            constantsMapping = ConstantsMappingFileAccessor.readConstantsClassesMappingFile(constantsMappingFile);
+            constantsMappingProvider = new DefaultConstantsMappingProvider(constantsMapping);
+        }
         // This will cause full recompilation after daemon will go down, since class mapping already works the same way it will be fixed in a separate review
         constantsMappingFile.delete();
         spec.getCompileOptions().setIncrementalCompilationConstantsMappingFile(constantsMappingFile);
 
         Compiler<JavaCompileSpec> compiler = createCompiler();
-        compiler = makeIncremental(inputs, sourceFileClassNameConverter, (CleaningJavaCompiler<JavaCompileSpec>) compiler, getStableSources().getAsFileTree());
+        compiler = makeIncremental(inputs, sourceFileClassNameConverter, constantsMappingProvider, (CleaningJavaCompiler<JavaCompileSpec>) compiler, getStableSources().getAsFileTree());
         WorkResult workResult = performCompilation(spec, compiler);
         if (workResult instanceof IncrementalCompilationResult && !isUsingCliCompiler) {
             // The compilation will generate the new mapping file
@@ -196,23 +206,26 @@ public class JavaCompile extends AbstractCompile implements HasCompileOptions {
         }
     }
 
-    private Compiler<JavaCompileSpec> makeIncremental(InputChanges inputs, SourceFileClassNameConverter sourceFileClassNameConverter, CleaningJavaCompiler<JavaCompileSpec> compiler, FileTree sources) {
+    private Compiler<JavaCompileSpec> makeIncremental(InputChanges inputs, SourceFileClassNameConverter sourceFileClassNameConverter, ConstantsMappingProvider constantsMappingProvider,
+                                                      CleaningJavaCompiler<JavaCompileSpec> compiler, FileTree sources) {
         return getIncrementalCompilerFactory().makeIncremental(
             compiler,
             getPath(),
             sources,
-            createRecompilationSpec(inputs, sourceFileClassNameConverter, sources)
+            constantsMappingProvider,
+            createRecompilationSpec(inputs, sourceFileClassNameConverter, constantsMappingProvider, sources)
         );
     }
 
-    private JavaRecompilationSpecProvider createRecompilationSpec(InputChanges inputs, SourceFileClassNameConverter sourceFileClassNameConverter, FileTree sources) {
+    private JavaRecompilationSpecProvider createRecompilationSpec(InputChanges inputs, SourceFileClassNameConverter sourceFileClassNameConverter, ConstantsMappingProvider constantsMappingProvider, FileTree sources) {
         return new JavaRecompilationSpecProvider(
             getDeleter(),
             getServices().get(FileOperations.class),
             sources,
             inputs.isIncremental(),
             () -> inputs.getFileChanges(getStableSources()).iterator(),
-            sourceFileClassNameConverter);
+            sourceFileClassNameConverter,
+            constantsMappingProvider);
     }
 
     private boolean isUsingCliCompiler(DefaultJavaCompileSpec spec) {

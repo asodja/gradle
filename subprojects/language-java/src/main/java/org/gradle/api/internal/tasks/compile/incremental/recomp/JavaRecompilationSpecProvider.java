@@ -41,6 +41,7 @@ public class JavaRecompilationSpecProvider extends AbstractRecompilationSpecProv
     private final boolean incremental;
     private final Iterable<FileChange> sourceChanges;
     private final SourceFileClassNameConverter sourceFileClassNameConverter;
+    private final ConstantsMappingProvider constantsMappingProvider;
 
     public JavaRecompilationSpecProvider(
         Deleter deleter,
@@ -48,11 +49,13 @@ public class JavaRecompilationSpecProvider extends AbstractRecompilationSpecProv
         FileTree sourceTree,
         boolean incremental,
         Iterable<FileChange> sourceFileChanges,
-        SourceFileClassNameConverter sourceFileClassNameConverter) {
+        SourceFileClassNameConverter sourceFileClassNameConverter,
+        ConstantsMappingProvider constantsMappingProvider) {
         super(deleter, fileOperations, sourceTree);
         this.incremental = incremental;
         this.sourceChanges = sourceFileChanges;
         this.sourceFileClassNameConverter = sourceFileClassNameConverter;
+        this.constantsMappingProvider = constantsMappingProvider;
     }
 
     @Override
@@ -62,11 +65,18 @@ public class JavaRecompilationSpecProvider extends AbstractRecompilationSpecProv
 
     @Override
     public RecompilationSpec provideRecompilationSpec(CurrentCompilation current, PreviousCompilation previous) {
-        RecompilationSpec spec = new RecompilationSpec();
+        RecompilationSpec spec = new RecompilationSpec(constantsMappingProvider);
         if (sourceFileClassNameConverter.isEmpty()) {
             String fullRebuildCause = previous.getAnnotationProcessorFullRebuildCause();
             if (fullRebuildCause == null) {
                 fullRebuildCause = "unable to get source-classes mapping relationship from last compilation";
+            }
+            spec.setFullRebuildCause(fullRebuildCause, null);
+            return spec;
+        } else if (constantsMappingProvider == null) {
+            String fullRebuildCause = previous.getAnnotationProcessorFullRebuildCause();
+            if (fullRebuildCause == null) {
+                fullRebuildCause = "unable to get constants mapping relationship from last compilation";
             }
             spec.setFullRebuildCause(fullRebuildCause, null);
             return spec;
