@@ -157,12 +157,12 @@ public class JdkTools {
         }
 
         @Override
-        public JavaCompiler.CompilationTask makeIncremental(JavaCompiler.CompilationTask task, File mappingFile, CompilationSourceDirs compilationSourceDirs) {
+        public JavaCompiler.CompilationTask makeIncremental(JavaCompiler.CompilationTask task, File classToFileMapping, File constantsMapping, CompilationSourceDirs compilationSourceDirs) {
             ensureCompilerTask();
             return DirectInstantiator.instantiate(incrementalCompileTaskClass, task,
                 (Function<File, Optional<String>>) file -> compilationSourceDirs.relativize(file),
-                (Consumer<Map<String, Collection<String>>>) mapping -> SourceClassesMappingFileAccessor.writeSourceClassesMappingFile(mappingFile, mapping),
-                (Consumer<Map<String, Collection<String>>>) mapping -> SourceClassesMappingFileAccessor.writeSourceClassesMappingFile(mappingFile, mapping));
+                (Consumer<Map<String, Collection<String>>>) mapping -> SourceClassesMappingFileAccessor.writeSourceClassesMappingFile(classToFileMapping, mapping),
+                (Consumer<Map<String, Collection<String>>>) mapping -> ConstantsMappingFileAccessor.writeConstantsClassesMappingFile(constantsMapping, mapping));
         }
     }
 

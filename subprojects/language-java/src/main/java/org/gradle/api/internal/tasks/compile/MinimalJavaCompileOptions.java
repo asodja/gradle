@@ -47,6 +47,7 @@ public class MinimalJavaCompileOptions implements Serializable {
     private String javaModuleVersion;
     private String javaModuleMainClass;
     private File incrementalCompilationMappingFile;
+    private File incrementalCompilationConstantsMapping;
 
     public MinimalJavaCompileOptions(final CompileOptions compileOptions) {
         FileCollection sourcepath = compileOptions.getSourcepath();
@@ -215,11 +216,21 @@ public class MinimalJavaCompileOptions implements Serializable {
     }
 
     @Nullable
-    public File getIncrementalCompilationMappingFile() {
+    public File getIncrementalCompilationClassToFile() {
         return incrementalCompilationMappingFile;
     }
 
-    public void setIncrementalCompilationMappingFile(@Nullable File incrementalCompilationMappingFile) {
-        this.incrementalCompilationMappingFile = incrementalCompilationMappingFile;
+    @Nullable
+    public File getIncrementalCompilationClassToFileMapping() {
+        return incrementalCompilationConstantsMapping;
     }
+
+    public void setIncrementalCompilationClassesMappingFile(@Nullable File incrementalCompilationClassesMappingFile) {
+        this.incrementalCompilationMappingFile = incrementalCompilationClassesMappingFile;
+    }
+
+    public void setIncrementalCompilationConstantsMappingFile(@Nullable File incrementalCompilationConstantsMapping) {
+        this.incrementalCompilationConstantsMapping = incrementalCompilationConstantsMapping;
+    }
+
 }
