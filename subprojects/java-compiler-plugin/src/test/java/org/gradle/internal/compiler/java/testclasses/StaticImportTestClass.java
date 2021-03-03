@@ -20,26 +20,26 @@ import org.gradle.internal.compiler.java.testclasses.annotations.Annotation;
 
 import java.util.Map;
 
-import static org.gradle.internal.compiler.java.testclasses.constants.AnnOnClass.ANN_ON_CLASS;
-import static org.gradle.internal.compiler.java.testclasses.constants.AnnOnClassTypeParam.ANN_ON_CLASS_TYPE_PARAM;
-import static org.gradle.internal.compiler.java.testclasses.constants.AnnConstantOnConstructor.ANN_ON_CONSTRUCTOR;
-import static org.gradle.internal.compiler.java.testclasses.constants.AnnConstantOnConstructorArgument.ANN_ON_CONSTRUCTOR_ARG;
-import static org.gradle.internal.compiler.java.testclasses.constants.AnnConstantOnField.ANN_ON_FIELD;
-import static org.gradle.internal.compiler.java.testclasses.constants.AnnConstantOnFieldTypeParam.ANN_ON_CONSTANT_FIELD_TYPE;
-import static org.gradle.internal.compiler.java.testclasses.constants.AnnConstantOnMethod.ANN_ON_METHOD;
-import static org.gradle.internal.compiler.java.testclasses.constants.AnnConstantOnMethodArgument.ANN_CONSTANT_ON_METHOD_ARGUMENT;
-import static org.gradle.internal.compiler.java.testclasses.constants.AnnConstantOnMethodTypeParam.ANN_CONSTANT_ON_METHOD_TYPE_PARAM;
-import static org.gradle.internal.compiler.java.testclasses.constants.AnnOnLocalFieldConstant.LOCAL_FIELD;
-import static org.gradle.internal.compiler.java.testclasses.constants.ConstructorFieldConstant.CONSTRUCTOR_FIELD_CONSTANT;
-import static org.gradle.internal.compiler.java.testclasses.constants.FieldDeclarationConstant.FIELD_DECLARATION;
-import static org.gradle.internal.compiler.java.testclasses.constants.FinalFieldDeclarationConstant.FINAL_FIELD_DECLARATION;
-import static org.gradle.internal.compiler.java.testclasses.constants.ForLoopAssignOpConstant.ASSIGN_OP;
-import static org.gradle.internal.compiler.java.testclasses.constants.ForLoopConditionConstant.COND;
-import static org.gradle.internal.compiler.java.testclasses.constants.ForLoopInitConstant.FOR_LOOP_INIT;
-import static org.gradle.internal.compiler.java.testclasses.constants.IfConditionConstant.IF_CONDITION;
-import static org.gradle.internal.compiler.java.testclasses.constants.LambdaConstant.LAMBDA;
-import static org.gradle.internal.compiler.java.testclasses.constants.StaticFinalFieldDeclarationConstant.STATIC_FINAL_FIELD_DECLERATION;
-import static org.gradle.internal.compiler.java.testclasses.constants.SwitchCaseConstant.SWITCH_CASE;
+import static org.gradle.internal.compiler.java.testclasses.constants.classtest.AnnOnClass.ANN_ON_CLASS;
+import static org.gradle.internal.compiler.java.testclasses.constants.classtest.AnnOnClassTypeParam.ANN_ON_CLASS_TYPE_PARAM;
+import static org.gradle.internal.compiler.java.testclasses.constants.classtest.AnnConstantOnConstructor.ANN_ON_CONSTRUCTOR;
+import static org.gradle.internal.compiler.java.testclasses.constants.classtest.AnnConstantOnConstructorArgument.ANN_ON_CONSTRUCTOR_ARG;
+import static org.gradle.internal.compiler.java.testclasses.constants.classtest.AnnConstantOnField.ANN_ON_FIELD;
+import static org.gradle.internal.compiler.java.testclasses.constants.classtest.AnnConstantOnFieldTypeParam.ANN_ON_CONSTANT_FIELD_TYPE;
+import static org.gradle.internal.compiler.java.testclasses.constants.classtest.AnnConstantOnMethod.ANN_ON_METHOD;
+import static org.gradle.internal.compiler.java.testclasses.constants.classtest.AnnConstantOnMethodArgument.ANN_CONSTANT_ON_METHOD_ARGUMENT;
+import static org.gradle.internal.compiler.java.testclasses.constants.classtest.AnnConstantOnMethodTypeParam.ANN_CONSTANT_ON_METHOD_TYPE_PARAM;
+import static org.gradle.internal.compiler.java.testclasses.constants.classtest.AnnOnLocalFieldConstant.LOCAL_FIELD;
+import static org.gradle.internal.compiler.java.testclasses.constants.classtest.ConstructorFieldConstant.CONSTRUCTOR_FIELD_CONSTANT;
+import static org.gradle.internal.compiler.java.testclasses.constants.classtest.FieldDeclarationConstant.FIELD_DECLARATION;
+import static org.gradle.internal.compiler.java.testclasses.constants.classtest.FinalFieldDeclarationConstant.FINAL_FIELD_DECLARATION;
+import static org.gradle.internal.compiler.java.testclasses.constants.classtest.ForLoopAssignOpConstant.ASSIGN_OP;
+import static org.gradle.internal.compiler.java.testclasses.constants.classtest.ForLoopConditionConstant.COND;
+import static org.gradle.internal.compiler.java.testclasses.constants.classtest.ForLoopInitConstant.FOR_LOOP_INIT;
+import static org.gradle.internal.compiler.java.testclasses.constants.classtest.IfConditionConstant.IF_CONDITION;
+import static org.gradle.internal.compiler.java.testclasses.constants.classtest.LambdaConstant.LAMBDA;
+import static org.gradle.internal.compiler.java.testclasses.constants.classtest.StaticFinalFieldDeclarationConstant.STATIC_FINAL_FIELD_DECLERATION;
+import static org.gradle.internal.compiler.java.testclasses.constants.classtest.SwitchCaseConstant.SWITCH_CASE;
 
 @Annotation(ANN_ON_CLASS)
 public class StaticImportTestClass<@Annotation(ANN_ON_CLASS_TYPE_PARAM) T> {
