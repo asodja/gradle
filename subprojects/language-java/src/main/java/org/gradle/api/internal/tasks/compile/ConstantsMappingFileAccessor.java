@@ -89,21 +89,4 @@ public class ConstantsMappingFileAccessor {
         }
     }
 
-    public static void writeConstantsClassesMappingFile(File mappingFile, Multimap<String, String> mapping) {
-        writeConstantsClassesMappingFile(mappingFile, mapping.asMap());
-    }
-
-    public static void mergeIncrementalMappingsIntoOldMappings(File sourceClassesMappingFile,
-                                                               FileCollection stableSources,
-                                                               InputChanges inputChanges,
-                                                               Multimap<String, String> oldMappings) {
-        Multimap<String, String> mappingsDuringIncrementalCompilation = readConstantsClassesMappingFile(sourceClassesMappingFile);
-        StreamSupport.stream(inputChanges.getFileChanges(stableSources).spliterator(), false)
-            .filter(fileChange -> fileChange.getChangeType() == ChangeType.REMOVED)
-            .map(FileChange::getNormalizedPath)
-            .forEach(oldMappings::removeAll);
-        mappingsDuringIncrementalCompilation.keySet().forEach(oldMappings::removeAll);
-        oldMappings.putAll(mappingsDuringIncrementalCompilation);
-        writeConstantsClassesMappingFile(sourceClassesMappingFile, oldMappings);
-    }
 }

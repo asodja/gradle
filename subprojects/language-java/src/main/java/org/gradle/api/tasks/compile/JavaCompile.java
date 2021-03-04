@@ -182,16 +182,11 @@ public class JavaCompile extends AbstractCompile implements HasCompileOptions {
 
         // Read constants mapping
         File constantsMappingFile = getConstantsMappingFile();
-        ConstantsMappingProvider constantsMappingProvider;
-        Multimap<String, String> constantsMapping;
-        if (isUsingCliCompiler) {
-            constantsMapping = null;
-            constantsMappingProvider = null;
-        } else {
-            constantsMapping = ConstantsMappingFileAccessor.readConstantsClassesMappingFile(constantsMappingFile);
+        ConstantsMappingProvider constantsMappingProvider = null;
+        if (!isUsingCliCompiler) {
+            Multimap<String, String> constantsMapping = ConstantsMappingFileAccessor.readConstantsClassesMappingFile(constantsMappingFile);
             constantsMappingProvider = new DefaultConstantsMappingProvider(constantsMapping);
         }
-        // This will cause full recompilation after daemon will go down, since class mapping already works the same way it will be fixed in a separate review
         constantsMappingFile.delete();
         spec.getCompileOptions().setIncrementalCompilationConstantsMappingFile(constantsMappingFile);
 
@@ -202,7 +197,6 @@ public class JavaCompile extends AbstractCompile implements HasCompileOptions {
             // The compilation will generate the new mapping file
             // Only merge old mappings into new mapping on incremental recompilation
             SourceClassesMappingFileAccessor.mergeIncrementalMappingsIntoOldMappings(sourceClassesMappingFile, getStableSources(), inputs, classToFileMapping);
-            ConstantsMappingFileAccessor.mergeIncrementalMappingsIntoOldMappings(constantsMappingFile, getStableSources(), inputs, constantsMapping);
         }
     }
 
@@ -213,19 +207,18 @@ public class JavaCompile extends AbstractCompile implements HasCompileOptions {
             getPath(),
             sources,
             constantsMappingProvider,
-            createRecompilationSpec(inputs, sourceFileClassNameConverter, constantsMappingProvider, sources)
+            createRecompilationSpec(inputs, sourceFileClassNameConverter, sources)
         );
     }
 
-    private JavaRecompilationSpecProvider createRecompilationSpec(InputChanges inputs, SourceFileClassNameConverter sourceFileClassNameConverter, ConstantsMappingProvider constantsMappingProvider, FileTree sources) {
+    private JavaRecompilationSpecProvider createRecompilationSpec(InputChanges inputs, SourceFileClassNameConverter sourceFileClassNameConverter, FileTree sources) {
         return new JavaRecompilationSpecProvider(
             getDeleter(),
             getServices().get(FileOperations.class),
             sources,
             inputs.isIncremental(),
             () -> inputs.getFileChanges(getStableSources()).iterator(),
-            sourceFileClassNameConverter,
-            constantsMappingProvider);
+            sourceFileClassNameConverter);
     }
 
     private boolean isUsingCliCompiler(DefaultJavaCompileSpec spec) {
@@ -323,7 +316,7 @@ public class JavaCompile extends AbstractCompile implements HasCompileOptions {
     /**
      * The classes to constants mapping file. Internal use only.
      *
-     * @since 7.1
+     * @since 7.x
      */
     @LocalState
     protected File getConstantsMappingFile() {

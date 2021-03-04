@@ -21,6 +21,7 @@ import org.gradle.api.file.FileTreeElement;
 import org.gradle.api.internal.cache.StringInterner;
 import org.gradle.api.internal.tasks.compile.incremental.asm.ClassDependenciesVisitor;
 import org.gradle.api.internal.tasks.compile.incremental.deps.ClassAnalysis;
+import org.gradle.api.internal.tasks.compile.incremental.recomp.ConstantsMappingProvider;
 import org.gradle.internal.hash.HashCode;
 import org.objectweb.asm.ClassReader;
 
@@ -30,15 +31,17 @@ import java.io.InputStream;
 public class DefaultClassDependenciesAnalyzer implements ClassDependenciesAnalyzer {
 
     private final StringInterner interner;
+    private final ConstantsMappingProvider constantsMappingProvider;
 
-    public DefaultClassDependenciesAnalyzer(StringInterner interner) {
+    public DefaultClassDependenciesAnalyzer(StringInterner interner, ConstantsMappingProvider constantsMappingProvider) {
         this.interner = interner;
+        this.constantsMappingProvider = constantsMappingProvider;
     }
 
     public ClassAnalysis getClassAnalysis(InputStream input) throws IOException {
         ClassReader reader = new ClassReader(ByteStreams.toByteArray(input));
         String className = reader.getClassName().replace("/", ".");
-        return ClassDependenciesVisitor.analyze(className, reader, interner);
+        return ClassDependenciesVisitor.analyze(className, reader, interner, constantsMappingProvider);
     }
 
     @Override

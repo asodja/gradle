@@ -35,7 +35,7 @@ import java.util.function.Function;
  * in its own subproject and uses as little dependencies as possible (in particular
  * it only depends on JDK types).
  *
- * It's accessed with reflection so don't move it with care to other packages.
+ * It's accessed with reflection so move it with care to other packages.
  *
  * This class is therefore loaded (and tested) via reflection in org.gradle.api.internal.tasks.compile.JdkTools.
  */

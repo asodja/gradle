@@ -16,11 +16,11 @@
 
 package org.gradle.api.internal.tasks.compile.incremental.asm;
 
-import java.util.function.Predicate;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
 import org.gradle.api.internal.cache.StringInterner;
 import org.gradle.api.internal.tasks.compile.incremental.deps.ClassAnalysis;
+import org.gradle.api.internal.tasks.compile.incremental.recomp.ConstantsMappingProvider;
 import org.gradle.internal.classanalysis.AsmConstants;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
@@ -33,6 +33,7 @@ import org.objectweb.asm.TypePath;
 import java.lang.annotation.RetentionPolicy;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Predicate;
 
 public class ClassDependenciesVisitor extends ClassVisitor {
 
@@ -46,8 +47,9 @@ public class ClassDependenciesVisitor extends ClassVisitor {
     private boolean isAnnotationType;
     private boolean dependencyToAll;
     private final RetentionPolicyVisitor retentionPolicyVisitor;
+    private final ConstantsMappingProvider constantsMappingProvider;
 
-    private ClassDependenciesVisitor(Predicate<String> typeFilter, ClassReader reader, StringInterner interner) {
+    private ClassDependenciesVisitor(Predicate<String> typeFilter, ClassReader reader, StringInterner interner, ConstantsMappingProvider constantsMappingProvider) {
         super(API);
         this.constants = new IntOpenHashSet(2);
         this.privateTypes = new HashSet<>();
@@ -55,12 +57,16 @@ public class ClassDependenciesVisitor extends ClassVisitor {
         this.retentionPolicyVisitor = new RetentionPolicyVisitor();
         this.typeFilter = typeFilter;
         this.interner = interner;
+        this.constantsMappingProvider = constantsMappingProvider;
         collectRemainingClassDependencies(reader);
     }
 
-    public static ClassAnalysis analyze(String className, ClassReader reader, StringInterner interner) {
-        ClassDependenciesVisitor visitor = new ClassDependenciesVisitor(new ClassRelevancyFilter(className), reader, interner);
+    public static ClassAnalysis analyze(String className, ClassReader reader, StringInterner interner, ConstantsMappingProvider constantsMappingProvider) {
+        ClassDependenciesVisitor visitor = new ClassDependenciesVisitor(new ClassRelevancyFilter(className), reader, interner, constantsMappingProvider);
         reader.accept(visitor, ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
+
+        // Add constant dependencies
+        visitor.addConstantDependencies(className);
 
         // Remove the "API accessible" types from the "privately used types"
         visitor.privateTypes.removeAll(visitor.accessibleTypes);
@@ -115,6 +121,10 @@ public class ClassDependenciesVisitor extends ClassVisitor {
                 }
             }
         }
+    }
+
+    protected void addConstantDependencies(String className) {
+        constantsMappingProvider.getConstantsForClass(className).forEach(it -> maybeAddDependentType(accessibleTypes, it));
     }
 
     protected void maybeAddDependentType(Set<String> types, String type) {

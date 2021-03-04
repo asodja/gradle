@@ -16,7 +16,7 @@
 
 package org.gradle.java.compile.incremental
 
-import groovy.transform.NotYetImplemented
+
 import org.gradle.integtests.fixtures.CompiledLanguage
 import org.gradle.util.Requires
 import org.gradle.util.TestPrecondition
@@ -26,33 +26,69 @@ abstract class AbstractCrossTaskIncrementalJavaCompilationIntegrationTest extend
     CompiledLanguage language = CompiledLanguage.JAVA
 
     @Unroll
-    def "change in an upstream class with non-private constant causes rebuild if same constant is used (#constantType)"() {
-        source api: ["class A {}", "class B { final static $constantType x = $constantValue; }"], impl: ["class ImplA extends A { $constantType foo() { return $constantValue; }}", "class ImplB {int foo() { return 2; }}"]
+    def "change in an upstream class with non-private constant causes rebuild if constant is referenced in method body (#constantType)"() {
+        source api: ["class A {}", "class B { final static $constantType x = $constantValue; }"], impl: ["class ImplA extends A { $constantType foo() { return B.x; }}", "class ImplB {int foo() { return 2; }}"]
         impl.snapshot { run language.compileTaskName }
 
         when:
-        source api: ["class B { /* change */ }"]
+        source api: ["class B { final static $constantType x = $newValue; /* change */ void blah() { /* avoid flakiness by changing compiled file length*/ } }"]
         run "impl:${language.compileTaskName}"
 
         then:
-        // impl.recompiledClasses('ImplA') //  Can re-enable with compiler plugins. See gradle/gradle#1474
-        impl.recompiledClasses('ImplA', 'ImplB')
+        impl.recompiledClasses('ImplA')
 
         where:
-        constantType | constantValue
-        'boolean'    | 'false'
-        'byte'       | '(byte) 125'
-        'short'      | '(short) 666'
-        'int'        | '55542'
-        'long'       | '5L'
-        'float'      | '6f'
-        'double'     | '7d'
-        'String'     | '"foo"'
-        'String'     | '"foo" + "bar"'
+        constantType | constantValue   | newValue
+        'boolean'    | 'false'         | 'true'
+        'byte'       | '(byte) 125'    | '(byte) 126'
+        'short'      | '(short) 666'   | '(short) 555'
+        'int'        | '55542'         | '444'
+        'long'       | '5L'            | '689L'
+        'float'      | '6f'            | '6.5f'
+        'double'     | '7d'            | '7.2d'
+        'String'     | '"foo"'         | '"bar"'
+        'String'     | '"foo" + "bar"' | '"bar"'
     }
 
-    // This test describes the current behavior, not the intended one, expressed by the test just above
-    def "changing an unused non-private constant causes full rebuild"() {
+    @Unroll
+    def "change in an upstream class with non-private constant causes rebuild if constant is referenced in field (#constantType)"() {
+        source api: ["class A {}", "class B { final static $constantType x = $constantValue; }"], impl: ["class ImplA extends A { $constantType foo() { return B.x; }}", "class ImplB {int foo() { return 2; }}"]
+        impl.snapshot { run language.compileTaskName }
+
+        when:
+        source api: ["class B { final static $constantType x = $newValue; /* change */ void blah() { /* avoid flakiness by changing compiled file length*/ } }"]
+        run "impl:${language.compileTaskName}"
+
+        then:
+        impl.recompiledClasses('ImplA')
+
+        where:
+        constantType | constantValue   | newValue
+        'boolean'    | 'false'         | 'true'
+        'byte'       | '(byte) 125'    | '(byte) 126'
+        'short'      | '(short) 666'   | '(short) 555'
+        'int'        | '55542'         | '444'
+        'long'       | '5L'            | '689L'
+        'float'      | '6f'            | '6.5f'
+        'double'     | '7d'            | '7.2d'
+        'String'     | '"foo"'         | '"bar"'
+        'String'     | '"foo" + "bar"' | '"bar"'
+    }
+
+    def "changing an unused non-private constant recompile child classes"() {
+        println(buildFile.text)
+        source api: ["class A {}", "class B { final static int x = 1; }"], impl: ["class ImplA extends A {}", "class ImplB extends B {}"]
+        impl.snapshot { run language.compileTaskName }
+
+        when:
+        source api: ["class B { final static int x = 2; /* change */ void blah() { /* avoid flakiness by changing compiled file length*/ }  }"]
+        run "impl:${language.compileTaskName}"
+
+        then:
+        impl.recompiledClasses('ImplB')
+    }
+
+    def "removing an unused non-private constant recompile child classes"() {
         println(buildFile.text)
         source api: ["class A {}", "class B { final static int x = 1; }"], impl: ["class ImplA extends A {}", "class ImplB extends B {}"]
         impl.snapshot { run language.compileTaskName }
@@ -62,13 +98,23 @@ abstract class AbstractCrossTaskIncrementalJavaCompilationIntegrationTest extend
         run "impl:${language.compileTaskName}"
 
         then:
-        impl.recompiledClasses('ImplA', 'ImplB')
+        impl.recompiledClasses('ImplB')
     }
 
-    @NotYetImplemented
-    //  Can re-enable with compiler plugins. See gradle/gradle#1474
-    def "changing an unused non-private constant doesn't cause full rebuild"() {
-        source api: ["class A {}", "class B { final static int x = 1; }"], impl: ["class ImplA extends A {}", "class ImplB extends B {}"]
+    def "changing an unused non-private constant doesn't cause any compilation"() {
+        source api: ["class A {}", "class B { final static int x = 1; }"], impl: ["class ImplA {}", "class ImplB {}"]
+        impl.snapshot { run language.compileTaskName }
+
+        when:
+        source api: ["class B { final static int x = 2; /* change */ void blah() { /* avoid flakiness by changing compiled file length*/ }  }"]
+        run "impl:${language.compileTaskName}"
+
+        then:
+        impl.recompiledClasses()
+    }
+
+    def "removing an unused non-private constant doesn't cause any compilation"() {
+        source api: ["class A {}", "class B { final static int x = 1; }"], impl: ["class ImplA {}", "class ImplB {}"]
         impl.snapshot { run language.compileTaskName }
 
         when:
@@ -76,7 +122,7 @@ abstract class AbstractCrossTaskIncrementalJavaCompilationIntegrationTest extend
         run "impl:${language.compileTaskName}"
 
         then:
-        impl.recompiledClasses('ImplB')
+        impl.recompiledClasses()
     }
 
     // This behavior is kept for backward compatibility - may be removed in the future
@@ -143,7 +189,7 @@ abstract class AbstractCrossTaskIncrementalJavaCompilationIntegrationTest extend
         result.hasErrorOutput("package a is not visible")
     }
 
-    def "recompiles in case of conflicting changing constant values"() {
+    def "does not recompiles in case of conflicting changing constant values"() {
         source api: ["class A { final static int x = 3; }", "class B { final static int x = 3; final static int y = -2; }"],
             impl: ["class X { int foo() { return 3; }}", "class Y {int foo() { return -2; }}"]
         impl.snapshot { run language.compileTaskName }
@@ -154,6 +200,6 @@ abstract class AbstractCrossTaskIncrementalJavaCompilationIntegrationTest extend
         run "impl:${language.compileTaskName}"
 
         then:
-        impl.recompiledClasses('X', 'Y')
+        impl.recompiledClasses()
     }
 }

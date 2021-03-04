@@ -29,12 +29,7 @@ public class RecompilationSpec {
     private final Collection<String> classesToProcess = new LinkedHashSet<>();
     private final Collection<GeneratedResource> resourcesToGenerate = new LinkedHashSet<>();
     private final Set<String> relativeSourcePathsToCompile = new LinkedHashSet<>();
-    private final ConstantsMappingProvider constantsMappingProvider;
     private String fullRebuildCause;
-
-    public RecompilationSpec(ConstantsMappingProvider constantsMappingProvider) {
-        this.constantsMappingProvider = constantsMappingProvider;
-    }
 
     @Override
     public String toString() {

@@ -308,39 +308,34 @@ abstract class AbstractCrossTaskIncrementalCompilationIntegrationTest extends Ab
         impl.recompiledClasses("X")
     }
 
-
     @Unroll
-    @NotYetImplemented
-    //  Can re-enable with compiler plugins. See gradle/gradle#1474
     def "change in an upstream class with non-private constant causes rebuild only if same constant is used and no direct dependency (#constantType)"() {
-        source api: ["class A {}", "class B { final static $constantType x = $constantValue; }"], impl: ["class X { $constantType foo() { return $constantValue; }}", "class Y {int foo() { return -2; }}"]
+        source api: ["class A {}", "class B { final static $constantType x = $constantValue; }"], impl: ["class X { $constantType foo() { return B.x; }}", "class Y {int foo() { return -2; }}"]
         impl.snapshot { run language.compileTaskName }
 
         when:
-        source api: ["class B { /* change */ }"]
+        source api: ["class B { final static $constantType x = $newValue; /* change */ void bla() { /* avoid flakiness */ } }"]
         run "impl:${language.compileTaskName}"
 
         then:
         impl.recompiledClasses('X')
 
         where:
-        constantType | constantValue
-        'boolean'    | 'false'
-        'byte'       | '(byte) 125'
-        'short'      | '(short) 666'
-        'int'        | '55542'
-        'long'       | '5L'
-        'float'      | '6f'
-        'double'     | '7d'
-        'String'     | '"foo"'
-        'String'     | '"foo" + "bar"'
+        constantType | constantValue   | newValue
+        'boolean'    | 'false'         | 'true'
+        'byte'       | '(byte) 125'    | '(byte) 126'
+        'short'      | '(short) 666'   | '(short) 555'
+        'int'        | '55542'         | '444'
+        'long'       | '5L'            | '689L'
+        'float'      | '6f'            | '6.5f'
+        'double'     | '7d'            | '7.2d'
+        'String'     | '"foo"'         | '"bar"'
+        'String'     | '"foo" + "bar"' | '"bar"'
     }
 
     @Unroll
-    @NotYetImplemented
-    //  Can re-enable with compiler plugins. See gradle/gradle#1474
     def "constant value change in an upstream class causes rebuild if previous constant value was used in previous build (#constantType)"() {
-        source api: ["class A {}", "class B { final static $constantType x = $constantValue; }"], impl: ["class X { $constantType foo() { return $constantValue; }}", "class Y {int foo() { return -2; }}"]
+        source api: ["class A {}", "class B { final static $constantType x = $constantValue; }"], impl: ["class X { $constantType foo() { return B.x; }}", "class Y {int foo() { return -2; }}"]
         impl.snapshot { run language.compileTaskName }
 
         when:
@@ -762,7 +757,7 @@ abstract class AbstractCrossTaskIncrementalCompilationIntegrationTest extends Ab
         run("impl:${language.compileTaskName}")
 
         then:
-        impl.recompiledClasses('B', 'C', 'C$Inner', 'D', 'D$Inner', 'E', 'E$1', 'F', 'F$Inner')
+        impl.recompiledClasses('C', 'C$Inner', 'D', 'D$Inner', 'E', 'E$1', 'F', 'F$Inner')
 
         where:
         visibility << ['public', 'private', '']
@@ -781,7 +776,8 @@ abstract class AbstractCrossTaskIncrementalCompilationIntegrationTest extends Ab
             "@B(A.CST) class OnClass {}",
             "class OnMethod { @B(A.CST) void foo() {} }",
             "class OnField { @B(A.CST) String foo; }",
-            "class OnParameter { void foo(@B(A.CST) int x) {} }"
+            "class OnParameter { void foo(@B(A.CST) int x) {} }",
+            "class InMethodBody { void foo(int x) { @B(A.CST) int value = 5; } }"
         ]
 
         impl.snapshot { run("impl:${language.compileTaskName}") }
@@ -791,7 +787,7 @@ abstract class AbstractCrossTaskIncrementalCompilationIntegrationTest extends Ab
         run("impl:${language.compileTaskName}")
 
         then:
-        impl.recompiledClasses("OnClass", "OnMethod", "OnParameter", "OnField")
+        impl.recompiledClasses("OnClass", "OnMethod", "OnParameter", "OnField", "InMethodBody")
     }
 
     @Unroll
@@ -894,21 +890,6 @@ abstract class AbstractCrossTaskIncrementalCompilationIntegrationTest extends Ab
         impl.recompiledClasses("ImplA")
     }
 
-    @NotYetImplemented
-    //  Can re-enable with compiler plugins. See gradle/gradle#1474
-    def "only recompiles classes potentially affected by constant change"() {
-        source api: ["class A { public static final int FOO = 10; public static final int BAR = 20; }"],
-            impl: ['class B { void foo() { int x = 10; } }', 'class C { void foo() { int x = 20; } }']
-        impl.snapshot { run language.compileTaskName }
-
-        when:
-        source api: ['class A { public static final int FOO = 100; public static final int BAR = 20; }']
-        run "impl:${language.compileTaskName}"
-
-        then:
-        impl.recompiledClasses 'B'
-    }
-
     @ToBeFixedForConfigurationCache(
         bottomSpecs = [
             "CrossTaskIncrementalGroovyCompilationUsingClassDirectoryIntegrationTest",
@@ -918,7 +899,7 @@ abstract class AbstractCrossTaskIncrementalCompilationIntegrationTest extends Ab
     )
     def "recompiles dependent class in case a constant is switched"() {
         source api: ["class A { public static final int FOO = 10; public static final int BAR = 20; }"],
-            impl: ['class B { void foo() { int x = 10; } }', 'class C { void foo() { int x = 20; } }']
+            impl: ['class B { void foo() { int x = A.FOO; } }', 'class C { void foo() { int x = A.BAR; } }']
         impl.snapshot { run language.compileTaskName }
 
         when:
@@ -929,7 +910,6 @@ abstract class AbstractCrossTaskIncrementalCompilationIntegrationTest extends Ab
         impl.recompiledClasses 'B', 'C'
     }
 
-    @Issue("gradle/gradle#1474")
     @ToBeFixedForConfigurationCache(
         bottomSpecs = [
             "CrossTaskIncrementalGroovyCompilationUsingClassDirectoryIntegrationTest",
@@ -938,7 +918,7 @@ abstract class AbstractCrossTaskIncrementalCompilationIntegrationTest extends Ab
         because = "gradle/configuration-cache#270"
     )
     def "recompiles dependent class in case a constant is computed from another constant"() {
-        source api: ["class A { public static final int FOO = 10; }"], impl: ['class B { public static final int BAR = 2 + A.FOO; } ']
+        source api: ["class A { public static final int FOO = 10; }"], impl: ['class B { public static final int BAR = 2 + A.FOO; }', 'class C { }']
         impl.snapshot { run language.compileTaskName }
 
         when:
