@@ -20,6 +20,5 @@ import java.util.Collection;
 
 public interface ConstantsMappingProvider {
     Collection<String> getConstantsForClass(String className);
-    Collection<String> getClassesAccessingConstant(String constant);
     boolean isConstantAnalysisEnabled();
 }

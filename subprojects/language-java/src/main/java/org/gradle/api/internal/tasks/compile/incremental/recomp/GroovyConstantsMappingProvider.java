@@ -26,11 +26,6 @@ public class GroovyConstantsMappingProvider implements ConstantsMappingProvider 
     }
 
     @Override
-    public Collection<String> getClassesAccessingConstant(String constant) {
-        throw new UnsupportedOperationException("Get classes for constants not supported.");
-    }
-
-    @Override
     public boolean isConstantAnalysisEnabled() {
         return false;
     }

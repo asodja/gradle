@@ -16,34 +16,24 @@
 
 package org.gradle.api.internal.tasks.compile.incremental.recomp;
 
+import com.google.common.base.Suppliers;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 
 import java.util.Collection;
+import java.util.function.Supplier;
 
 public class DefaultConstantsMappingProvider implements ConstantsMappingProvider {
-    private final Multimap<String, String> classToConstantsMapping;
-    private final Multimap<String, String> constantToClassesSourceMapping;
 
-    public DefaultConstantsMappingProvider(Multimap<String, String> classToConstantsMapping) {
-        this.classToConstantsMapping = classToConstantsMapping;
-        this.constantToClassesSourceMapping = constructReverseMapping(classToConstantsMapping);
-    }
+    private final com.google.common.base.Supplier<Multimap<String, String>> classToConstantsMapping;
 
-    private Multimap<String, String> constructReverseMapping(Multimap<String, String> classToConstantsMapping) {
-        Multimap<String, String> constantToClassesSourceMapping = HashMultimap.create();
-        classToConstantsMapping.entries().forEach(e -> constantToClassesSourceMapping.put(e.getValue(), e.getKey()));
-        return constantToClassesSourceMapping;
+    public DefaultConstantsMappingProvider(Supplier<Multimap<String, String>> classToConstantsMapping) {
+        this.classToConstantsMapping = Suppliers.memoize(classToConstantsMapping::get);
     }
 
     @Override
     public Collection<String> getConstantsForClass(String className) {
-        return classToConstantsMapping.get(className);
-    }
-
-    @Override
-    public Collection<String> getClassesAccessingConstant(String constants) {
-        return constantToClassesSourceMapping.get(constants);
+        return classToConstantsMapping.get().get(className);
     }
 
     @Override

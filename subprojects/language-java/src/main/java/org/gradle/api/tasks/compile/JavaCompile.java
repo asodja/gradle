@@ -180,14 +180,13 @@ public class JavaCompile extends AbstractCompile implements HasCompileOptions {
         sourceClassesMappingFile.delete();
         spec.getCompileOptions().setIncrementalCompilationClassesMappingFile(sourceClassesMappingFile);
 
-        // Read constants mapping
+        // Setup constants mapping
         File constantsMappingFile = getConstantsMappingFile();
         ConstantsMappingProvider constantsMappingProvider = null;
         if (!isUsingCliCompiler) {
-            Multimap<String, String> constantsMapping = ConstantsMappingFileAccessor.readConstantsClassesMappingFile(constantsMappingFile);
-            constantsMappingProvider = new DefaultConstantsMappingProvider(constantsMapping);
+            // Constants mapping is read after compilation is done, so we cannot read it now, but lazily later
+            constantsMappingProvider = new DefaultConstantsMappingProvider(() -> ConstantsMappingFileAccessor.readConstantsClassesMappingFile(constantsMappingFile));
         }
-        constantsMappingFile.delete();
         spec.getCompileOptions().setIncrementalCompilationConstantsMappingFile(constantsMappingFile);
 
         Compiler<JavaCompileSpec> compiler = createCompiler();
