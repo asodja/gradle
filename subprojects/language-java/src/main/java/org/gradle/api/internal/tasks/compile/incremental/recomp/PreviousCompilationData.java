@@ -20,6 +20,7 @@ import org.gradle.api.internal.cache.StringInterner;
 import org.gradle.api.internal.tasks.compile.incremental.classpath.ClasspathSnapshotData;
 import org.gradle.api.internal.tasks.compile.incremental.classpath.ClasspathSnapshotDataSerializer;
 import org.gradle.api.internal.tasks.compile.incremental.processing.AnnotationProcessingData;
+import org.gradle.api.internal.tasks.compile.incremental.compilerapi.CompilerApiData;
 import org.gradle.internal.serialize.AbstractSerializer;
 import org.gradle.internal.serialize.BaseSerializerFactory;
 import org.gradle.internal.serialize.Decoder;
@@ -33,13 +34,19 @@ public class PreviousCompilationData {
     private final File destinationDir;
     private final AnnotationProcessingData annotationProcessingData;
     private final ClasspathSnapshotData classpathSnapshot;
+    private final CompilerApiData compilerApiData;
     private final List<File> annotationProcessorPath;
 
-    public PreviousCompilationData(File destinationDir, AnnotationProcessingData annotationProcessingData, ClasspathSnapshotData classpathSnapshot, List<File> annotationProcessorPath) {
+    public PreviousCompilationData(File destinationDir,
+                                   AnnotationProcessingData annotationProcessingData,
+                                   ClasspathSnapshotData classpathSnapshot,
+                                   List<File> annotationProcessorPath,
+                                   CompilerApiData compilerApiData) {
         this.destinationDir = destinationDir;
         this.annotationProcessingData = annotationProcessingData;
         this.classpathSnapshot = classpathSnapshot;
         this.annotationProcessorPath = annotationProcessorPath;
+        this.compilerApiData = compilerApiData;
     }
 
     public File getDestinationDir() {
@@ -58,15 +65,21 @@ public class PreviousCompilationData {
         return annotationProcessorPath;
     }
 
+    public CompilerApiData getCompilerApiData() {
+        return compilerApiData;
+    }
+
     public static class Serializer extends AbstractSerializer<PreviousCompilationData> {
         private final ClasspathSnapshotDataSerializer classpathSnapshotDataSerializer;
         private final ListSerializer<File> processorPathSerializer;
         private final AnnotationProcessingData.Serializer annotationProcessingDataSerializer;
+        private final CompilerApiData.Serializer compilerApiDataSeriler;
 
         public Serializer(StringInterner interner) {
             classpathSnapshotDataSerializer = new ClasspathSnapshotDataSerializer();
             processorPathSerializer = new ListSerializer<File>(BaseSerializerFactory.FILE_SERIALIZER);
             annotationProcessingDataSerializer = new AnnotationProcessingData.Serializer(interner);
+            compilerApiDataSeriler = new CompilerApiData.Serializer(interner);
         }
 
         @Override
@@ -75,7 +88,8 @@ public class PreviousCompilationData {
             ClasspathSnapshotData classpathSnapshot = classpathSnapshotDataSerializer.read(decoder);
             List<File> processorPath = processorPathSerializer.read(decoder);
             AnnotationProcessingData annotationProcessingData = annotationProcessingDataSerializer.read(decoder);
-            return new PreviousCompilationData(destinationDir, annotationProcessingData, classpathSnapshot, processorPath);
+            CompilerApiData compilerApiData = compilerApiDataSeriler.read(decoder);
+            return new PreviousCompilationData(destinationDir, annotationProcessingData, classpathSnapshot, processorPath, compilerApiData);
         }
 
         @Override

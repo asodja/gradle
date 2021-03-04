@@ -44,7 +44,7 @@ class DefaultClasspathEntrySnapshotterTest extends Specification {
 
     def "creates snapshot for an empty entry"() {
         expect:
-        def snapshot = snapshotter.createSnapshot(HashCode.fromInt(123), temp.file("foo"))
+        def snapshot = snapshotter.createSnapshot(HashCode.fromInt(123), temp.file("foo"), classToConstantsMapping)
         snapshot.hashes.isEmpty()
         snapshot.classAnalysis
     }
@@ -61,7 +61,7 @@ class DefaultClasspathEntrySnapshotterTest extends Specification {
         def fileTree = Mock(ConfigurableFileTree)
 
         when:
-        def snapshot = snapshotter.createSnapshot(HashCode.fromInt(123), entry)
+        def snapshot = snapshotter.createSnapshot(HashCode.fromInt(123), entry, classToConstantsMapping)
 
         then:
         1 * fileOperations.fileTree(entry) >> fileTree
@@ -72,11 +72,11 @@ class DefaultClasspathEntrySnapshotterTest extends Specification {
             visitor.visitFile(new DefaultFileVisitDetails(f3, null, null))
         }
         1 * fileHasher.hash(_, _, _) >> f1Hash
-        1 * classDependenciesAnalyzer.getClassAnalysis(f1Hash, f1Details) >> Stub(ClassAnalysis) {
+        1 * classDependenciesAnalyzer.getClassAnalysis(f1Hash, f1Details, classToConstantsMapping) >> Stub(ClassAnalysis) {
             getClassName() >> "Foo"
         }
         1 * fileHasher.hash(_, _, _) >> f2Hash
-        1 * classDependenciesAnalyzer.getClassAnalysis(f2Hash, f2Details) >> Stub(ClassAnalysis) {
+        1 * classDependenciesAnalyzer.getClassAnalysis(f2Hash, f2Details, classToConstantsMapping) >> Stub(ClassAnalysis) {
             getClassName() >> "com.Foo2"
         }
         0 * _._

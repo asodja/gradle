@@ -16,9 +16,12 @@
 
 package org.gradle.api.internal.tasks.compile.incremental.analyzer;
 
+import it.unimi.dsi.fastutil.ints.IntSet;
 import org.gradle.api.file.FileTreeElement;
 import org.gradle.api.internal.tasks.compile.incremental.deps.ClassAnalysis;
 import org.gradle.internal.hash.HashCode;
+
+import java.util.Map;
 
 public class CachingClassDependenciesAnalyzer implements ClassDependenciesAnalyzer {
     private final ClassDependenciesAnalyzer analyzer;
@@ -30,7 +33,7 @@ public class CachingClassDependenciesAnalyzer implements ClassDependenciesAnalyz
     }
 
     @Override
-    public ClassAnalysis getClassAnalysis(final HashCode classFileHash, final FileTreeElement classFile) {
-        return cache.get(classFileHash, () -> analyzer.getClassAnalysis(classFileHash, classFile));
+    public ClassAnalysis getClassAnalysis(final HashCode classFileHash, final FileTreeElement classFile, Map<String, IntSet> classToConstantsMapping) {
+        return cache.get(classFileHash, () -> analyzer.getClassAnalysis(classFileHash, classFile, classToConstantsMapping));
     }
 }

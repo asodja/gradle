@@ -26,6 +26,7 @@ import org.gradle.api.internal.tasks.compile.JavaCompileSpec;
 import org.gradle.api.internal.tasks.compile.JdkJavaCompilerResult;
 import org.gradle.api.internal.tasks.compile.incremental.classpath.ClasspathSnapshotData;
 import org.gradle.api.internal.tasks.compile.incremental.classpath.ClasspathSnapshotProvider;
+import org.gradle.api.internal.tasks.compile.incremental.compilerapi.CompilerApiData;
 import org.gradle.api.internal.tasks.compile.incremental.processing.AnnotationProcessingData;
 import org.gradle.api.internal.tasks.compile.incremental.processing.AnnotationProcessingResult;
 import org.gradle.api.internal.tasks.compile.incremental.processing.GeneratedResource;
@@ -69,7 +70,8 @@ class IncrementalResultStoringCompiler<T extends JavaCompileSpec> implements Com
     private void storeResult(JavaCompileSpec spec, WorkResult result) {
         ClasspathSnapshotData classpathSnapshot = classpathSnapshotProvider.getClasspathSnapshot(Iterables.concat(spec.getCompileClasspath(), spec.getModulePath())).getData();
         AnnotationProcessingData annotationProcessingData = getAnnotationProcessingResult(spec, result);
-        PreviousCompilationData data = new PreviousCompilationData(spec.getDestinationDir(), annotationProcessingData, classpathSnapshot, spec.getAnnotationProcessorPath());
+        CompilerApiData compilerApiData = getCompilerApiData(spec, result);
+        PreviousCompilationData data = new PreviousCompilationData(spec.getDestinationDir(), annotationProcessingData, classpathSnapshot, spec.getAnnotationProcessorPath(), compilerApiData);
         stash.put(data);
     }
 
@@ -95,6 +97,10 @@ class IncrementalResultStoringCompiler<T extends JavaCompileSpec> implements Com
         Set<String> aggregatingTypes = processingResult.getGeneratedAggregatingTypes();
         Set<GeneratedResource> aggregatingResources = processingResult.getGeneratedAggregatingResources();
         return new AnnotationProcessingData(intern(generatedTypesByOrigin), intern(aggregatedTypes), intern(aggregatingTypes), generatedResourcesByOrigin, aggregatingResources, processingResult.getFullRebuildCause());
+    }
+
+    private CompilerApiData getCompilerApiData(JavaCompileSpec spec, WorkResult result) {
+        return null;
     }
 
     private Set<String> intern(Set<String> types) {

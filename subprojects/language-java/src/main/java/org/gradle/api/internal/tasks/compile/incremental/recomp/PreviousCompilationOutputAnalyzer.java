@@ -16,6 +16,7 @@
 
 package org.gradle.api.internal.tasks.compile.incremental.recomp;
 
+import it.unimi.dsi.fastutil.ints.IntSet;
 import org.gradle.api.internal.file.FileOperations;
 import org.gradle.api.internal.tasks.compile.incremental.analyzer.ClassDependenciesAnalyzer;
 import org.gradle.api.internal.tasks.compile.incremental.classpath.ClasspathEntrySnapshot;
@@ -30,6 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.util.Map;
 
 //TODO reuse cached result from downstream users of our classes directory
 public class PreviousCompilationOutputAnalyzer {
@@ -41,10 +43,10 @@ public class PreviousCompilationOutputAnalyzer {
         this.snapshotter = new DefaultClasspathEntrySnapshotter(fileHasher, streamHasher, analyzer, fileOperations);
     }
 
-    public ClassSetAnalysis getAnalysis(File classesDirectory) {
+    public ClassSetAnalysis getAnalysis(File classesDirectory, Map<String, IntSet> classToConstantsMapping) {
         Timer clock = Time.startTimer();
         HashCode unusedHashCode = HashCode.fromInt(0);
-        ClasspathEntrySnapshot snapshot = snapshotter.createSnapshot(unusedHashCode, classesDirectory);
+        ClasspathEntrySnapshot snapshot = snapshotter.createSnapshot(unusedHashCode, classesDirectory, classToConstantsMapping);
         LOG.info("Class dependency analysis for incremental compilation took {}.", clock.getElapsed());
         return snapshot.getClassAnalysis();
     }

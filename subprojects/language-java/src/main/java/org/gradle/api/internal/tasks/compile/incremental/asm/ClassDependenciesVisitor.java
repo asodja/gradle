@@ -16,11 +16,9 @@
 
 package org.gradle.api.internal.tasks.compile.incremental.asm;
 
-import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
 import org.gradle.api.internal.cache.StringInterner;
 import org.gradle.api.internal.tasks.compile.incremental.deps.ClassAnalysis;
-import org.gradle.api.internal.tasks.compile.incremental.recomp.ConstantsMappingProvider;
 import org.gradle.internal.classanalysis.AsmConstants;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
@@ -32,6 +30,7 @@ import org.objectweb.asm.TypePath;
 
 import java.lang.annotation.RetentionPolicy;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
 
@@ -39,7 +38,6 @@ public class ClassDependenciesVisitor extends ClassVisitor {
 
     private final static int API = AsmConstants.ASM_LEVEL;
 
-    private final IntSet constants;
     private final Set<String> privateTypes;
     private final Set<String> accessibleTypes;
     private final Predicate<String> typeFilter;
@@ -47,31 +45,29 @@ public class ClassDependenciesVisitor extends ClassVisitor {
     private boolean isAnnotationType;
     private boolean dependencyToAll;
     private final RetentionPolicyVisitor retentionPolicyVisitor;
-    private final ConstantsMappingProvider constantsMappingProvider;
 
-    private ClassDependenciesVisitor(Predicate<String> typeFilter, ClassReader reader, StringInterner interner, ConstantsMappingProvider constantsMappingProvider) {
+    private ClassDependenciesVisitor(Predicate<String> typeFilter, ClassReader reader, StringInterner interner) {
         super(API);
-        this.constants = new IntOpenHashSet(2);
         this.privateTypes = new HashSet<>();
         this.accessibleTypes = new HashSet<>();
         this.retentionPolicyVisitor = new RetentionPolicyVisitor();
         this.typeFilter = typeFilter;
         this.interner = interner;
-        this.constantsMappingProvider = constantsMappingProvider;
         collectRemainingClassDependencies(reader);
     }
 
-    public static ClassAnalysis analyze(String className, ClassReader reader, StringInterner interner, ConstantsMappingProvider constantsMappingProvider) {
-        ClassDependenciesVisitor visitor = new ClassDependenciesVisitor(new ClassRelevancyFilter(className), reader, interner, constantsMappingProvider);
+    public static ClassAnalysis analyze(String className, ClassReader reader, StringInterner interner, Map<String, IntSet> constantsMappingProvider) {
+        ClassDependenciesVisitor visitor = new ClassDependenciesVisitor(new ClassRelevancyFilter(className), reader, interner);
         reader.accept(visitor, ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
 
-        // Add constant dependencies
-        visitor.addConstantDependencies(className);
+        // Constants are read in compiler plugin
+        // Value is calculated as "originating.Class|CONSTANT_NAME".hashCode()
+        IntSet constants = constantsMappingProvider.get(className);
 
         // Remove the "API accessible" types from the "privately used types"
         visitor.privateTypes.removeAll(visitor.accessibleTypes);
 
-        return new ClassAnalysis(interner.intern(className), visitor.getPrivateClassDependencies(), visitor.getAccessibleClassDependencies(), visitor.isDependencyToAll(), visitor.getConstants());
+        return new ClassAnalysis(interner.intern(className), visitor.getPrivateClassDependencies(), visitor.getAccessibleClassDependencies(), visitor.isDependencyToAll(), constants);
     }
 
     @Override
@@ -123,10 +119,6 @@ public class ClassDependenciesVisitor extends ClassVisitor {
         }
     }
 
-    protected void addConstantDependencies(String className) {
-        constantsMappingProvider.getConstantsForClass(className).forEach(it -> maybeAddDependentType(accessibleTypes, it));
-    }
-
     protected void maybeAddDependentType(Set<String> types, String type) {
         if (typeFilter.test(type)) {
             types.add(intern(type));
@@ -149,10 +141,6 @@ public class ClassDependenciesVisitor extends ClassVisitor {
         return accessibleTypes;
     }
 
-    public IntSet getConstants() {
-        return constants;
-    }
-
     private boolean isAnnotationType(String[] interfaces) {
         return interfaces.length == 1 && interfaces[0].equals("java/lang/annotation/Annotation");
     }
@@ -161,12 +149,6 @@ public class ClassDependenciesVisitor extends ClassVisitor {
     public FieldVisitor visitField(int access, String name, String desc, String signature, Object value) {
         Set<String> types = isAccessible(access) ? accessibleTypes : privateTypes;
         maybeAddDependentType(types, descTypeOf(desc));
-        if (isAccessibleConstant(access, value)) {
-            // we need to compute a hash for a constant, which is based on the name of the constant + its value
-            // otherwise we miss the case where a class defines several constants with the same value, or when
-            // two values are switched
-            constants.add((name + '|' + value).hashCode()); //non-private const
-        }
         return new FieldVisitor(types);
     }
 
@@ -201,14 +183,6 @@ public class ClassDependenciesVisitor extends ClassVisitor {
 
     private static boolean isAccessible(int access) {
         return (access & Opcodes.ACC_PRIVATE) == 0;
-    }
-
-    private static boolean isAccessibleConstant(int access, Object value) {
-        return isConstant(access) && isAccessible(access) && value != null;
-    }
-
-    private static boolean isConstant(int access) {
-        return (access & Opcodes.ACC_FINAL) != 0 && (access & Opcodes.ACC_STATIC) != 0;
     }
 
     public boolean isDependencyToAll() {
