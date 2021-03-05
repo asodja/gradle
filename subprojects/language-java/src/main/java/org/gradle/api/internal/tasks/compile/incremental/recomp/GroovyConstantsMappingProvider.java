@@ -16,13 +16,15 @@
 
 package org.gradle.api.internal.tasks.compile.incremental.recomp;
 
+import com.google.common.collect.Multimap;
+
 import java.util.Collection;
 
 public class GroovyConstantsMappingProvider implements ConstantsMappingProvider {
 
     @Override
-    public Collection<String> getConstantsForClass(String className) {
-        throw new UnsupportedOperationException("Get constants for class not supported.");
+    public Multimap<String, String> getClassToConstantsMapping() {
+        return null;
     }
 
     @Override

@@ -73,13 +73,13 @@ public class PreviousCompilationData {
         private final ClasspathSnapshotDataSerializer classpathSnapshotDataSerializer;
         private final ListSerializer<File> processorPathSerializer;
         private final AnnotationProcessingData.Serializer annotationProcessingDataSerializer;
-        private final CompilerApiData.Serializer compilerApiDataSeriler;
+        private final CompilerApiData.Serializer compilerApiDataSerializer;
 
         public Serializer(StringInterner interner) {
             classpathSnapshotDataSerializer = new ClasspathSnapshotDataSerializer();
             processorPathSerializer = new ListSerializer<File>(BaseSerializerFactory.FILE_SERIALIZER);
             annotationProcessingDataSerializer = new AnnotationProcessingData.Serializer(interner);
-            compilerApiDataSeriler = new CompilerApiData.Serializer(interner);
+            compilerApiDataSerializer = new CompilerApiData.Serializer(interner);
         }
 
         @Override
@@ -88,7 +88,7 @@ public class PreviousCompilationData {
             ClasspathSnapshotData classpathSnapshot = classpathSnapshotDataSerializer.read(decoder);
             List<File> processorPath = processorPathSerializer.read(decoder);
             AnnotationProcessingData annotationProcessingData = annotationProcessingDataSerializer.read(decoder);
-            CompilerApiData compilerApiData = compilerApiDataSeriler.read(decoder);
+            CompilerApiData compilerApiData = compilerApiDataSerializer.read(decoder);
             return new PreviousCompilationData(destinationDir, annotationProcessingData, classpathSnapshot, processorPath, compilerApiData);
         }
 
@@ -98,6 +98,7 @@ public class PreviousCompilationData {
             classpathSnapshotDataSerializer.write(encoder, value.classpathSnapshot);
             processorPathSerializer.write(encoder, value.annotationProcessorPath);
             annotationProcessingDataSerializer.write(encoder, value.annotationProcessingData);
+            compilerApiDataSerializer.write(encoder, value.compilerApiData);
         }
     }
 }

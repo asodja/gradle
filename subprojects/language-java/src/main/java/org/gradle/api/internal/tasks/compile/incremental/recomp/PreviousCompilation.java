@@ -46,10 +46,12 @@ public class PreviousCompilation {
 
     private ClassSetAnalysis getClassAnalysis() {
         if (classAnalysis == null) {
-            classAnalysis = previousCompilationOutputAnalyzer.getAnalysis(
-                data.getDestinationDir(),
-                data.getCompilerApiData().getClassToConstantsMapping()
-            ).withAnnotationProcessingData(data.getAnnotationProcessingData());
+            classAnalysis = previousCompilationOutputAnalyzer
+                .getAnalysis(data.getDestinationDir())
+                .withAdditionalPreviousCompilationData(
+                    data.getAnnotationProcessingData(),
+                    data.getCompilerApiData()
+                );
         }
         return classAnalysis;
     }

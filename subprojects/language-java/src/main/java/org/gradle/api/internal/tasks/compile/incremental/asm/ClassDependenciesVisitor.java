@@ -16,6 +16,7 @@
 
 package org.gradle.api.internal.tasks.compile.incremental.asm;
 
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
 import org.gradle.api.internal.cache.StringInterner;
 import org.gradle.api.internal.tasks.compile.incremental.deps.ClassAnalysis;
@@ -30,7 +31,6 @@ import org.objectweb.asm.TypePath;
 
 import java.lang.annotation.RetentionPolicy;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
 
@@ -38,6 +38,7 @@ public class ClassDependenciesVisitor extends ClassVisitor {
 
     private final static int API = AsmConstants.ASM_LEVEL;
 
+    private final IntSet constants;
     private final Set<String> privateTypes;
     private final Set<String> accessibleTypes;
     private final Predicate<String> typeFilter;
@@ -48,6 +49,7 @@ public class ClassDependenciesVisitor extends ClassVisitor {
 
     private ClassDependenciesVisitor(Predicate<String> typeFilter, ClassReader reader, StringInterner interner) {
         super(API);
+        this.constants = new IntOpenHashSet(2);
         this.privateTypes = new HashSet<>();
         this.accessibleTypes = new HashSet<>();
         this.retentionPolicyVisitor = new RetentionPolicyVisitor();
@@ -56,18 +58,14 @@ public class ClassDependenciesVisitor extends ClassVisitor {
         collectRemainingClassDependencies(reader);
     }
 
-    public static ClassAnalysis analyze(String className, ClassReader reader, StringInterner interner, Map<String, IntSet> constantsMappingProvider) {
+    public static ClassAnalysis analyze(String className, ClassReader reader, StringInterner interner) {
         ClassDependenciesVisitor visitor = new ClassDependenciesVisitor(new ClassRelevancyFilter(className), reader, interner);
         reader.accept(visitor, ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
-
-        // Constants are read in compiler plugin
-        // Value is calculated as "originating.Class|CONSTANT_NAME".hashCode()
-        IntSet constants = constantsMappingProvider.get(className);
 
         // Remove the "API accessible" types from the "privately used types"
         visitor.privateTypes.removeAll(visitor.accessibleTypes);
 
-        return new ClassAnalysis(interner.intern(className), visitor.getPrivateClassDependencies(), visitor.getAccessibleClassDependencies(), visitor.isDependencyToAll(), constants);
+        return new ClassAnalysis(interner.intern(className), visitor.getPrivateClassDependencies(), visitor.getAccessibleClassDependencies(), visitor.isDependencyToAll(), visitor.getConstants());
     }
 
     @Override
@@ -141,6 +139,10 @@ public class ClassDependenciesVisitor extends ClassVisitor {
         return accessibleTypes;
     }
 
+    public IntSet getConstants() {
+        return constants;
+    }
+
     private boolean isAnnotationType(String[] interfaces) {
         return interfaces.length == 1 && interfaces[0].equals("java/lang/annotation/Annotation");
     }
@@ -149,6 +151,11 @@ public class ClassDependenciesVisitor extends ClassVisitor {
     public FieldVisitor visitField(int access, String name, String desc, String signature, Object value) {
         Set<String> types = isAccessible(access) ? accessibleTypes : privateTypes;
         maybeAddDependentType(types, descTypeOf(desc));
+        if (isAccessibleConstant(access, value)) {
+            // This is currently not used anywhere, it's still here since
+            // there might be some additional constants analysis improvement
+            constants.add((name + '|' + value).hashCode());
+        }
         return new FieldVisitor(types);
     }
 
@@ -183,6 +190,14 @@ public class ClassDependenciesVisitor extends ClassVisitor {
 
     private static boolean isAccessible(int access) {
         return (access & Opcodes.ACC_PRIVATE) == 0;
+    }
+
+    private static boolean isAccessibleConstant(int access, Object value) {
+        return isConstant(access) && isAccessible(access) && value != null;
+    }
+
+    private static boolean isConstant(int access) {
+        return (access & Opcodes.ACC_FINAL) != 0 && (access & Opcodes.ACC_STATIC) != 0;
     }
 
     public boolean isDependencyToAll() {

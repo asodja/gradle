@@ -295,11 +295,11 @@ class AbstractIntegrationSpec extends Specification {
     }
 
     protected GradleExecuter withDebugLogging() {
-        executer.withArgument("-d")
+        executer.withArgument("-i")
     }
 
     protected ExecutionResult succeeds(String... tasks) {
-        result = executer.withTasks(*tasks).run()
+        result = withDebugLogging().withTasks(*tasks).run()
     }
 
     protected ExecutionFailure runAndFail(String... tasks) {

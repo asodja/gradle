@@ -16,9 +16,11 @@
 
 package org.gradle.api.internal.tasks.compile.incremental.recomp;
 
+import com.google.common.collect.Multimap;
+
 import java.util.Collection;
 
 public interface ConstantsMappingProvider {
-    Collection<String> getConstantsForClass(String className);
+    Multimap<String, String> getClassToConstantsMapping();
     boolean isConstantAnalysisEnabled();
 }

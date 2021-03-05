@@ -194,8 +194,6 @@ public class GroovyCompile extends AbstractCompile implements HasCompileOptions 
                 cleaningGroovyCompiler,
                 getPath(),
                 getStableSources().getAsFileTree(),
-                // TODO test Groovy, it should work, but it's Groovy...
-                new GroovyConstantsMappingProvider(),
                 createRecompilationSpecProvider(inputChanges, sourceClassesMapping)
             );
         } else {

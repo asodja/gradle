@@ -16,13 +16,10 @@
 
 package org.gradle.api.internal.tasks.compile.incremental.analyzer;
 
-import it.unimi.dsi.fastutil.ints.IntSet;
 import org.gradle.api.file.FileTreeElement;
 import org.gradle.api.internal.tasks.compile.incremental.deps.ClassAnalysis;
 import org.gradle.internal.hash.HashCode;
 
-import java.util.Map;
-
 public interface ClassDependenciesAnalyzer {
-    ClassAnalysis getClassAnalysis(HashCode classFileHash, FileTreeElement classFile, Map<String, IntSet> classToConstantsMapping);
+    ClassAnalysis getClassAnalysis(HashCode classFileHash, FileTreeElement classFile);
 }

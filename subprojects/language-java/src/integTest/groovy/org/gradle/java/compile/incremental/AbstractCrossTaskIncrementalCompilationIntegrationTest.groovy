@@ -295,21 +295,20 @@ abstract class AbstractCrossTaskIncrementalCompilationIntegrationTest extends Ab
         impl.noneRecompiled()
     }
 
-    @NotYetImplemented
-    //  Can re-enable with compiler plugins. See gradle/gradle#1474
-    def "deletion of jar with non-private constant causes rebuild if constant is used"() {
-        source api: ["class A { public final static int x = 1; }"], impl: ["class X { int x() { return 1;} }", "class Y {}"]
+    def "deletion of jar with used non-private causes compilation failure if constant is used"() {
+        source api: ["class A { public final static int x = 1; }"], impl: ["class X { int x() { return A.x;} }", "class Y {}"]
         impl.snapshot { run language.compileTaskName }
 
         when:
-        run "impl:${language.compileTaskName}"
+        clearImplProjectDependencies()
+        fails "impl:${language.compileTaskName}"
 
         then:
-        impl.recompiledClasses("X")
+        impl.noneRecompiled()
     }
 
     @Unroll
-    def "change in an upstream class with non-private constant causes rebuild only if same constant is used and no direct dependency (#constantType)"() {
+    def "change in an upstream class with non-private constant causes rebuild only if constant is used (#constantType)"() {
         source api: ["class A {}", "class B { final static $constantType x = $constantValue; }"], impl: ["class X { $constantType foo() { return B.x; }}", "class Y {int foo() { return -2; }}"]
         impl.snapshot { run language.compileTaskName }
 
@@ -359,10 +358,12 @@ abstract class AbstractCrossTaskIncrementalCompilationIntegrationTest extends Ab
     }
 
     @NotYetImplemented
-    //  Can re-enable with compiler plugins. See gradle/gradle#1474
+    // It looks like this is hard to do for two reasons:
+    // 1. Some compilers (e.g. OpenJDK) add constant origin classes to constant pool
+    // 2. Can be expensive to track constants and their value or there is chance for collision if hash is used
     def "ignores irrelevant changes to constant values"() {
         source api: ["class A {}", "class B { final static int x = 3; final static int y = -2; }"],
-            impl: ["class X { int foo() { return 3; }}", "class Y {int foo() { return -2; }}"]
+            impl: ["class X { int foo() { return B.x; }}", "class Y {int foo() { return B.y; }}"]
         impl.snapshot { run language.compileTaskName }
 
         when:

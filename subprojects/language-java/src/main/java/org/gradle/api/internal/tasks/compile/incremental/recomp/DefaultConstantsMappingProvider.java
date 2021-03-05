@@ -17,23 +17,23 @@
 package org.gradle.api.internal.tasks.compile.incremental.recomp;
 
 import com.google.common.base.Suppliers;
-import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
+import org.gradle.api.internal.tasks.compile.ConstantsMappingFileAccessor;
 
+import java.io.File;
 import java.util.Collection;
-import java.util.function.Supplier;
 
 public class DefaultConstantsMappingProvider implements ConstantsMappingProvider {
 
     private final com.google.common.base.Supplier<Multimap<String, String>> classToConstantsMapping;
 
-    public DefaultConstantsMappingProvider(Supplier<Multimap<String, String>> classToConstantsMapping) {
-        this.classToConstantsMapping = Suppliers.memoize(classToConstantsMapping::get);
+    public DefaultConstantsMappingProvider(File mappingFile) {
+        this.classToConstantsMapping = Suppliers.memoize(() -> ConstantsMappingFileAccessor.readConstantsClassesMappingFile(mappingFile));
     }
 
     @Override
-    public Collection<String> getConstantsForClass(String className) {
-        return classToConstantsMapping.get().get(className);
+    public Multimap<String, String> getClassToConstantsMapping() {
+        return classToConstantsMapping.get();
     }
 
     @Override

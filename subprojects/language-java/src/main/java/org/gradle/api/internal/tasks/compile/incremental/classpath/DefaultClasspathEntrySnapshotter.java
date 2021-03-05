@@ -15,7 +15,6 @@
  */
 package org.gradle.api.internal.tasks.compile.incremental.classpath;
 
-import it.unimi.dsi.fastutil.ints.IntSet;
 import org.gradle.api.file.FileVisitDetails;
 import org.gradle.api.file.FileVisitor;
 import org.gradle.api.internal.file.FileOperations;
@@ -51,12 +50,12 @@ public class DefaultClasspathEntrySnapshotter {
         this.fileOperations = fileOperations;
     }
 
-    public ClasspathEntrySnapshot createSnapshot(HashCode hash, File classpathEntry, Map<String, IntSet> classToConstantsMapping) {
+    public ClasspathEntrySnapshot createSnapshot(HashCode hash, File classpathEntry) {
         final Map<String, HashCode> hashes = new HashMap<>();
         final ClassDependentsAccumulator accumulator = new ClassDependentsAccumulator();
 
         try {
-            visit(classpathEntry, hashes, classToConstantsMapping, accumulator);
+            visit(classpathEntry, hashes, accumulator);
         } catch (Exception e) {
             accumulator.fullRebuildNeeded(classpathEntry + " could not be analyzed for incremental compilation. See the debug log for more details");
             if (LOGGER.isDebugEnabled()) {
@@ -67,24 +66,22 @@ public class DefaultClasspathEntrySnapshotter {
         return new ClasspathEntrySnapshot(new ClasspathEntrySnapshotData(hash, hashes, accumulator.getAnalysis()));
     }
 
-    private void visit(File classpathEntry, Map<String, HashCode> hashes, Map<String, IntSet> classToConstantsMapping, ClassDependentsAccumulator accumulator) {
+    private void visit(File classpathEntry, Map<String, HashCode> hashes, ClassDependentsAccumulator accumulator) {
         if (hasExtension(classpathEntry, ".jar")) {
-            fileOperations.zipTree(classpathEntry).visit(new JarEntryVisitor(accumulator, hashes, classToConstantsMapping));
+            fileOperations.zipTree(classpathEntry).visit(new JarEntryVisitor(accumulator, hashes));
         }
         if (classpathEntry.isDirectory()) {
-            fileOperations.fileTree(classpathEntry).visit(new DirectoryEntryVisitor(accumulator, hashes, classToConstantsMapping));
+            fileOperations.fileTree(classpathEntry).visit(new DirectoryEntryVisitor(accumulator, hashes));
         }
     }
 
     private abstract class EntryVisitor implements FileVisitor {
         private final ClassDependentsAccumulator accumulator;
         private final Map<String, HashCode> hashes;
-        private final Map<String, IntSet> classToConstantsMapping;
 
-        public EntryVisitor(ClassDependentsAccumulator accumulator, Map<String, HashCode> hashes, Map<String, IntSet> classToConstantsMapping) {
+        public EntryVisitor(ClassDependentsAccumulator accumulator, Map<String, HashCode> hashes) {
             this.accumulator = accumulator;
             this.hashes = hashes;
-            this.classToConstantsMapping = classToConstantsMapping;
         }
 
         @Override
@@ -100,7 +97,7 @@ public class DefaultClasspathEntrySnapshotter {
             HashCode classFileHash = getHashCode(fileDetails);
 
             try {
-                ClassAnalysis analysis = analyzer.getClassAnalysis(classFileHash, fileDetails, classToConstantsMapping);
+                ClassAnalysis analysis = analyzer.getClassAnalysis(classFileHash, fileDetails);
                 accumulator.addClass(analysis);
                 hashes.put(analysis.getClassName(), classFileHash);
             } catch (Exception e) {
@@ -116,8 +113,8 @@ public class DefaultClasspathEntrySnapshotter {
 
     private class JarEntryVisitor extends EntryVisitor {
 
-        public JarEntryVisitor(ClassDependentsAccumulator accumulator, Map<String, HashCode> hashes, Map<String, IntSet> classToConstantsMapping) {
-            super(accumulator, hashes, classToConstantsMapping);
+        public JarEntryVisitor(ClassDependentsAccumulator accumulator, Map<String, HashCode> hashes) {
+            super(accumulator, hashes);
         }
 
         @Override
@@ -133,8 +130,8 @@ public class DefaultClasspathEntrySnapshotter {
 
     private class DirectoryEntryVisitor extends EntryVisitor {
 
-        public DirectoryEntryVisitor(ClassDependentsAccumulator accumulator, Map<String, HashCode> hashes, Map<String, IntSet> classToConstantsMapping) {
-            super(accumulator, hashes, classToConstantsMapping);
+        public DirectoryEntryVisitor(ClassDependentsAccumulator accumulator, Map<String, HashCode> hashes) {
+            super(accumulator, hashes);
         }
 
         @Override

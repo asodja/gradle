@@ -42,7 +42,7 @@ public class CachingClasspathEntrySnapshotter implements ClasspathEntrySnapshott
             classpathEntry,
             () -> fileSystemAccess.read(
                 classpathEntry.getAbsolutePath(),
-                snapshot -> snapshotter.createSnapshot(snapshot.getHash(), classpathEntry, classToConstantsMapping)
+                snapshot -> snapshotter.createSnapshot(snapshot.getHash(), classpathEntry)
             )
         );
     }

@@ -16,70 +16,51 @@
 
 package org.gradle.api.internal.tasks.compile.incremental.compilerapi;
 
-import it.unimi.dsi.fastutil.ints.IntSet;
-import it.unimi.dsi.fastutil.ints.IntSets;
 import org.gradle.api.internal.cache.StringInterner;
-import org.gradle.api.internal.tasks.compile.incremental.processing.AnnotationProcessingData;
-import org.gradle.api.internal.tasks.compile.incremental.processing.GeneratedResource;
-import org.gradle.api.internal.tasks.compile.incremental.processing.GeneratedResourceSerializer;
 import org.gradle.internal.serialize.AbstractSerializer;
 import org.gradle.internal.serialize.Decoder;
 import org.gradle.internal.serialize.Encoder;
+import org.gradle.internal.serialize.Int2ObjectMapSerializer;
 import org.gradle.internal.serialize.InterningStringSerializer;
-import org.gradle.internal.serialize.MapSerializer;
 import org.gradle.internal.serialize.SetSerializer;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
 public class CompilerApiData {
 
-    private final Map<String, IntSet> classToConstantsMapping;
+    private final Map<Integer, Set<String>> constantToClassMapping;
 
-    public CompilerApiData(Map<String, IntSet> classToConstantsMapping) {
-        this.classToConstantsMapping = classToConstantsMapping;
+    public CompilerApiData() {
+        this.constantToClassMapping = Collections.emptyMap();
     }
 
-    public Map<String, IntSet> getClassToConstantsMapping() {
-        return classToConstantsMapping;
+    public CompilerApiData(Map<Integer, Set<String>> classToConstantsMapping) {
+        this.constantToClassMapping = classToConstantsMapping;
+    }
+
+    public Map<Integer, Set<String>> getConstantToClassMapping() {
+        return constantToClassMapping;
     }
 
     public static final class Serializer extends AbstractSerializer<CompilerApiData> {
-        private final SetSerializer<String> typesSerializer;
-        private final MapSerializer<String, Set<String>> generatedTypesSerializer;
-        private final SetSerializer<GeneratedResource> resourcesSerializer;
-        private final MapSerializer<String, Set<GeneratedResource>> generatedResourcesSerializer;
+        private final Int2ObjectMapSerializer<Set<String>> mapSerializer;
 
         public Serializer(StringInterner interner) {
             InterningStringSerializer stringSerializer = new InterningStringSerializer(interner);
-            typesSerializer = new SetSerializer<>(stringSerializer);
-            generatedTypesSerializer = new MapSerializer<>(stringSerializer, typesSerializer);
-
-            GeneratedResourceSerializer resourceSerializer = new GeneratedResourceSerializer(stringSerializer);
-            this.resourcesSerializer = new SetSerializer<>(resourceSerializer);
-            this.generatedResourcesSerializer = new MapSerializer<>(stringSerializer, resourcesSerializer);
+            SetSerializer<String> stringSetSerializer = new SetSerializer<>(stringSerializer);
+            mapSerializer = new Int2ObjectMapSerializer<>(stringSetSerializer);
         }
 
         @Override
         public CompilerApiData read(Decoder decoder) throws Exception {
-            Map<String, Set<String>> generatedTypes = generatedTypesSerializer.read(decoder);
-            Set<String> aggregatedTypes = typesSerializer.read(decoder);
-            Set<String> generatedTypesDependingOnAllOthers = typesSerializer.read(decoder);
-            String fullRebuildCause = decoder.readNullableString();
-            Map<String, Set<GeneratedResource>> generatedResources = generatedResourcesSerializer.read(decoder);
-            Set<GeneratedResource> generatedResourcesDependingOnAllOthers = resourcesSerializer.read(decoder);
-
-            return null; // new AnnotationProcessingData(generatedTypes, aggregatedTypes, generatedTypesDependingOnAllOthers, generatedResources, generatedResourcesDependingOnAllOthers, fullRebuildCause);
+            return new CompilerApiData(mapSerializer.read(decoder));
         }
 
         @Override
         public void write(Encoder encoder, CompilerApiData value) throws Exception {
-//            generatedTypesSerializer.write(encoder, value.generatedTypesByOrigin);
-//            typesSerializer.write(encoder, value.aggregatedTypes);
-//            typesSerializer.write(encoder, value.generatedTypesDependingOnAllOthers);
-//            encoder.writeNullableString(value.fullRebuildCause);
-//            generatedResourcesSerializer.write(encoder, value.generatedResourcesByOrigin);
-//            resourcesSerializer.write(encoder, value.generatedResourcesDependingOnAllOthers);
+            mapSerializer.write(encoder, value.getConstantToClassMapping());
         }
     }
 

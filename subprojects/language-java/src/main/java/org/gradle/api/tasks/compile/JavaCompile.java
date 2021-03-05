@@ -180,17 +180,12 @@ public class JavaCompile extends AbstractCompile implements HasCompileOptions {
         sourceClassesMappingFile.delete();
         spec.getCompileOptions().setIncrementalCompilationClassesMappingFile(sourceClassesMappingFile);
 
-        // Setup constants mapping
+        // Setup constants mapping file
         File constantsMappingFile = getConstantsMappingFile();
-        ConstantsMappingProvider constantsMappingProvider = null;
-        if (!isUsingCliCompiler) {
-            // Constants mapping is read after compilation is done, so we cannot read it now, but lazily later
-            constantsMappingProvider = new DefaultConstantsMappingProvider(() -> ConstantsMappingFileAccessor.readConstantsClassesMappingFile(constantsMappingFile));
-        }
         spec.getCompileOptions().setIncrementalCompilationConstantsMappingFile(constantsMappingFile);
 
         Compiler<JavaCompileSpec> compiler = createCompiler();
-        compiler = makeIncremental(inputs, sourceFileClassNameConverter, constantsMappingProvider, (CleaningJavaCompiler<JavaCompileSpec>) compiler, getStableSources().getAsFileTree());
+        compiler = makeIncremental(inputs, sourceFileClassNameConverter, (CleaningJavaCompiler<JavaCompileSpec>) compiler, getStableSources().getAsFileTree());
         WorkResult workResult = performCompilation(spec, compiler);
         if (workResult instanceof IncrementalCompilationResult && !isUsingCliCompiler) {
             // The compilation will generate the new mapping file
@@ -199,13 +194,11 @@ public class JavaCompile extends AbstractCompile implements HasCompileOptions {
         }
     }
 
-    private Compiler<JavaCompileSpec> makeIncremental(InputChanges inputs, SourceFileClassNameConverter sourceFileClassNameConverter, ConstantsMappingProvider constantsMappingProvider,
-                                                      CleaningJavaCompiler<JavaCompileSpec> compiler, FileTree sources) {
+    private Compiler<JavaCompileSpec> makeIncremental(InputChanges inputs, SourceFileClassNameConverter sourceFileClassNameConverter, CleaningJavaCompiler<JavaCompileSpec> compiler, FileTree sources) {
         return getIncrementalCompilerFactory().makeIncremental(
             compiler,
             getPath(),
             sources,
-            constantsMappingProvider,
             createRecompilationSpec(inputs, sourceFileClassNameConverter, sources)
         );
     }

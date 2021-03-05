@@ -62,7 +62,7 @@ public class ClasspathSnapshotFactory {
             }
         }
 
-        ClasspathSnapshotData classpathSnapshotData = new ClasspathSnapshotData(hashes, duplicateClasses, compilerApiData);
+        ClasspathSnapshotData classpathSnapshotData = new ClasspathSnapshotData(hashes, duplicateClasses);
         return new ClasspathSnapshot(snapshots, classpathSnapshotData);
     }
 

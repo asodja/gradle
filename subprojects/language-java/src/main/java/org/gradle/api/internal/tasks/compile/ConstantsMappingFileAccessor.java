@@ -21,11 +21,8 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.io.Files;
 import com.google.common.io.LineProcessor;
+import org.gradle.api.GradleException;
 import org.gradle.api.UncheckedIOException;
-import org.gradle.api.file.FileCollection;
-import org.gradle.work.ChangeType;
-import org.gradle.work.FileChange;
-import org.gradle.work.InputChanges;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -36,7 +33,6 @@ import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Map;
-import java.util.stream.StreamSupport;
 
 public class ConstantsMappingFileAccessor {
     private static final int BUFFER_SIZE = 65536;
@@ -47,15 +43,14 @@ public class ConstantsMappingFileAccessor {
             .hashSetValues()
             .build();
         if (!mappingFile.isFile()) {
-            return sourceClassesMapping;
+            throw new GradleException("Constants class mapping is not a file as expected. Path to file: " + mappingFile.getAbsolutePath());
         }
 
         try {
             Files.asCharSource(mappingFile, Charsets.UTF_8).readLines(new LineProcessor<Void>() {
                 private String currentFile;
-
                 @Override
-                public boolean processLine(String line) throws IOException {
+                public boolean processLine(String line) {
                     if (line.startsWith(" ")) {
                         sourceClassesMapping.put(currentFile, line.substring(1));
                     } else {

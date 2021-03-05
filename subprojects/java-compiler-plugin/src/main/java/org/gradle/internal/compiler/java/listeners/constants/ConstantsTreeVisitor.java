@@ -55,7 +55,7 @@ public class ConstantsTreeVisitor extends TreePathScanner<Collection<String>, Co
     public Collection<String> visitMemberSelect(MemberSelectTree node, Collection<String> collectedClasses) {
         Element element = trees.getElement(getCurrentPath());
         if (isPrimitiveConstantVariable(element)) {
-            collectedClasses.add(element.getEnclosingElement() + "|" + element);
+            collectedClasses.add(element.getEnclosingElement().toString());
         }
         return super.visitMemberSelect(node, collectedClasses);
     }
@@ -64,7 +64,7 @@ public class ConstantsTreeVisitor extends TreePathScanner<Collection<String>, Co
     public Collection<String> visitIdentifier(IdentifierTree node, Collection<String> collectedClasses) {
         Element element = trees.getElement(getCurrentPath());
         if (isPrimitiveConstantVariable(element)) {
-            collectedClasses.add(element.getEnclosingElement() + "|" + element);
+            collectedClasses.add(element.getEnclosingElement().toString());
         }
         return super.visitIdentifier(node, collectedClasses);
     }
