@@ -46,6 +46,7 @@ public class MinimalJavaCompileOptions implements Serializable {
     private File headerOutputDirectory;
     private String javaModuleVersion;
     private String javaModuleMainClass;
+    private boolean supportsCompilerApi;
     private File incrementalCompilationMappingFile;
     private File incrementalCompilationConstantsMapping;
 
@@ -220,17 +221,25 @@ public class MinimalJavaCompileOptions implements Serializable {
         return incrementalCompilationMappingFile;
     }
 
-    @Nullable
-    public File getIncrementalCompilationClassToFileMapping() {
-        return incrementalCompilationConstantsMapping;
-    }
-
     public void setIncrementalCompilationClassesMappingFile(@Nullable File incrementalCompilationClassesMappingFile) {
         this.incrementalCompilationMappingFile = incrementalCompilationClassesMappingFile;
     }
 
+    @Nullable
+    public File getIncrementalCompilationConstantsMappingFile() {
+        return incrementalCompilationConstantsMapping;
+    }
+
     public void setIncrementalCompilationConstantsMappingFile(@Nullable File incrementalCompilationConstantsMapping) {
         this.incrementalCompilationConstantsMapping = incrementalCompilationConstantsMapping;
+    }
+
+    public boolean supportsCompilerApi() {
+        return supportsCompilerApi;
+    }
+
+    public void setSupportsCompilerApi(boolean supportsCompilerApi) {
+        this.supportsCompilerApi = supportsCompilerApi;
     }
 
 }

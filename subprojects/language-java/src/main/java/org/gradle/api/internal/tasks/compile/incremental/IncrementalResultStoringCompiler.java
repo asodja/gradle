@@ -79,7 +79,7 @@ class IncrementalResultStoringCompiler<T extends JavaCompileSpec> implements Com
     private void storeResult(JavaCompileSpec spec, WorkResult result) {
         ClasspathSnapshotData classpathSnapshot = classpathSnapshotProvider.getClasspathSnapshot(Iterables.concat(spec.getCompileClasspath(), spec.getModulePath())).getData();
         AnnotationProcessingData annotationProcessingData = getAnnotationProcessingResult(spec, result);
-        CompilerApiData compilerApiData = getCompilerApiData(spec.getCompileOptions().getIncrementalCompilationClassToFileMapping());
+        CompilerApiData compilerApiData = getCompilerApiData(spec);
         PreviousCompilationData data = new PreviousCompilationData(spec.getDestinationDir(), annotationProcessingData, classpathSnapshot, spec.getAnnotationProcessorPath(), compilerApiData);
         previousCompilationStore.put(data);
     }
@@ -108,8 +108,12 @@ class IncrementalResultStoringCompiler<T extends JavaCompileSpec> implements Com
         return new AnnotationProcessingData(intern(generatedTypesByOrigin), intern(aggregatedTypes), intern(aggregatingTypes), generatedResourcesByOrigin, aggregatingResources, processingResult.getFullRebuildCause());
     }
 
-    private CompilerApiData getCompilerApiData(File compilationClassToConstantsFile) {
-        return new CompilerApiData(transform(readConstantsClassesMappingFile(compilationClassToConstantsFile)));
+    private CompilerApiData getCompilerApiData(JavaCompileSpec spec) {
+        if (spec.getCompileOptions().supportsCompilerApi()) {
+            File compilationClassToConstantsFile = spec.getCompileOptions().getIncrementalCompilationConstantsMappingFile();
+            return new CompilerApiData(transform(readConstantsClassesMappingFile(compilationClassToConstantsFile)));
+        }
+        return new CompilerApiData();
     }
 
     private Map<Integer, Set<String>> transform(Multimap<String, String> mapping) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 the original author or authors.
+ * Copyright 2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,10 @@
  * limitations under the License.
  */
 
+@PackageInfo(PACKAGE_INFO_CONSTANT + "world")
+package org.gradle.internal.compiler.java.testclasses.packageinfo;
 
-package org.gradle.java.compile.incremental
 
-import org.gradle.integtests.fixtures.CompiledLanguage
+import org.gradle.internal.compiler.java.testclasses.annotations.PackageInfo;
 
-class CrossTaskIncrementalGroovyCompilationUsingJarIntegrationTest extends AbstractCrossTaskIncrementalGroovyCompilationIntegrationTest {
-    CompiledLanguage language = CompiledLanguage.GROOVY
-    boolean useJar = true
-}
+import static org.gradle.internal.compiler.java.testclasses.constants.packageinfo.PackageInfoConstant.PACKAGE_INFO_CONSTANT;

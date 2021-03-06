@@ -21,7 +21,9 @@ import groovy.transform.NotYetImplemented
 import org.gradle.integtests.fixtures.CompilationOutputsFixture
 import org.gradle.integtests.fixtures.CompiledLanguage
 import org.gradle.integtests.fixtures.ToBeFixedForConfigurationCache
+import spock.lang.IgnoreIf
 import spock.lang.Issue
+import spock.lang.PendingFeatureIf
 import spock.lang.Unroll
 
 abstract class AbstractCrossTaskIncrementalCompilationIntegrationTest extends AbstractJavaGroovyIncrementalCompilationSupport {
@@ -290,18 +292,6 @@ abstract class AbstractCrossTaskIncrementalCompilationIntegrationTest extends Ab
         when:
         source api: ["class B { String change; }"]
         run "impl:${language.compileTaskName}"
-
-        then:
-        impl.noneRecompiled()
-    }
-
-    def "deletion of jar with used non-private causes compilation failure if constant is used"() {
-        source api: ["class A { public final static int x = 1; }"], impl: ["class X { int x() { return A.x;} }", "class Y {}"]
-        impl.snapshot { run language.compileTaskName }
-
-        when:
-        clearImplProjectDependencies()
-        fails "impl:${language.compileTaskName}"
 
         then:
         impl.noneRecompiled()
@@ -737,6 +727,8 @@ abstract class AbstractCrossTaskIncrementalCompilationIntegrationTest extends Ab
     }
 
     @Unroll
+    // Groovy does full recompilation in that case
+    @IgnoreIf({ AbstractCrossTaskIncrementalGroovyCompilationIntegrationTest.class.isAssignableFrom(getClass()) })
     def "recompiles outermost class when #visibility inner class contains constant reference"() {
         source api: [
             "class A { public static final int EVIL = 666; }",
@@ -762,7 +754,6 @@ abstract class AbstractCrossTaskIncrementalCompilationIntegrationTest extends Ab
 
         where:
         visibility << ['public', 'private', '']
-
     }
 
     def "recognizes change of constant value in annotation"() {
@@ -810,6 +801,7 @@ abstract class AbstractCrossTaskIncrementalCompilationIntegrationTest extends Ab
             """,
             "class A {}"
         ], impl: [
+            "class NoAnnitationClass {}",
             "@B(A.class) class OnClass {}",
             "class OnMethod { @B(A.class) void foo() {} }",
             "class OnField { @B(A.class) String foo; }",
@@ -898,9 +890,10 @@ abstract class AbstractCrossTaskIncrementalCompilationIntegrationTest extends Ab
         ],
         because = "gradle/configuration-cache#270"
     )
+    @PendingFeatureIf({ AbstractCrossTaskIncrementalGroovyCompilationIntegrationTest.class.isAssignableFrom(getClass()) })
     def "recompiles dependent class in case a constant is switched"() {
         source api: ["class A { public static final int FOO = 10; public static final int BAR = 20; }"],
-            impl: ['class B { void foo() { int x = A.FOO; } }', 'class C { void foo() { int x = A.BAR; } }']
+            impl: ['class B { void foo() { int x = A.FOO; } }', 'class C { void foo() { int x = A.BAR; } }', 'class D { }']
         impl.snapshot { run language.compileTaskName }
 
         when:
@@ -928,7 +921,6 @@ abstract class AbstractCrossTaskIncrementalCompilationIntegrationTest extends Ab
 
         then:
         impl.recompiledClasses 'B'
-
     }
 
     @ToBeFixedForConfigurationCache(

@@ -16,11 +16,14 @@
 
 package org.gradle.internal.compiler.java.listeners.constants;
 
+import com.sun.source.tree.AnnotationTree;
 import com.sun.source.tree.ClassTree;
 import com.sun.source.tree.IdentifierTree;
 import com.sun.source.tree.MemberSelectTree;
+import com.sun.source.tree.PackageTree;
 import com.sun.source.util.TreePathScanner;
 import com.sun.source.util.Trees;
+import com.sun.tools.javac.code.Symbol;
 
 import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
@@ -40,12 +43,31 @@ public class ConstantsTreeVisitor extends TreePathScanner<Collection<String>, Co
     }
 
     @Override
+    @SuppressWarnings("Since15")
+    public Collection<String> visitPackage(PackageTree node, Collection<String> collectedClasses) {
+        Element element = trees.getElement(getCurrentPath());
+
+        // Collect classes for visited class
+        String visitedClass = ((Symbol.TypeSymbol) element).getQualifiedName().toString();
+        super.visitPackage(node, mapping.computeIfAbsent(visitedClass, (k) -> new HashSet<>()));
+        if (mapping.get(visitedClass).isEmpty()) {
+            mapping.remove(visitedClass);
+        }
+
+        // Return back previous collected classes
+        return collectedClasses;
+    }
+
+    @Override
     public Collection<String> visitClass(ClassTree node, Collection<String> collectedClasses) {
         Element element = trees.getElement(getCurrentPath());
 
         // Collect classes for visited class
         String visitedClass = ((TypeElement) element).getQualifiedName().toString();
         super.visitClass(node, mapping.computeIfAbsent(visitedClass, (k) -> new HashSet<>()));
+        if (mapping.get(visitedClass).isEmpty()) {
+            mapping.remove(visitedClass);
+        }
 
         // Return back previous collected classes
         return collectedClasses;
@@ -63,6 +85,7 @@ public class ConstantsTreeVisitor extends TreePathScanner<Collection<String>, Co
     @Override
     public Collection<String> visitIdentifier(IdentifierTree node, Collection<String> collectedClasses) {
         Element element = trees.getElement(getCurrentPath());
+
         if (isPrimitiveConstantVariable(element)) {
             collectedClasses.add(element.getEnclosingElement().toString());
         }

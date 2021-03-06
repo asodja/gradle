@@ -16,7 +16,7 @@
 
 package org.gradle.java.compile.incremental
 
-
+import groovy.test.NotYetImplemented
 import org.gradle.integtests.fixtures.CompiledLanguage
 import org.gradle.util.Requires
 import org.gradle.util.TestPrecondition
@@ -202,4 +202,38 @@ abstract class AbstractCrossTaskIncrementalJavaCompilationIntegrationTest extend
         then:
         impl.recompiledClasses()
     }
+
+    @NotYetImplemented
+    // This would be possible since constant origins on Annotations are not put to Constants pool, even on OpenJDK
+    // but it's not yet implemented since we would have to track every constants as (symbol, value) pair
+    def "ignores irrelevant changes to constant values in annotations"() {
+        source api: ["class A { final static int x = 1; final static int y = -1; }",
+                     """import java.lang.annotation.Retention;
+               import java.lang.annotation.RetentionPolicy;
+               @Retention(RetentionPolicy.RUNTIME)
+               @interface B { int value(); }"""
+        ], impl: [
+            // cases where it's relevant, ABI-wise
+            "@B(A.x) class OnClass {}",
+            "class OnMethod { @B(A.y) void foo() {} }",
+            "class OnField { @B(A.x) String foo; }",
+            "class OnParameter { void foo(@B(A.y) int x) {} }",
+            "class InMethodBody { void foo(int x) { @B(A.x) int value = 5; } }"
+        ]
+
+        impl.snapshot { run language.compileTaskName }
+
+        when:
+        source api: ["class A { final static int x = $newXValue; final static int y = $newYValue; }"]
+        run "impl:${language.compileTaskName}"
+
+        then:
+        impl.recompiledClasses(compiledClasses.split(','))
+
+        where:
+        newXValue | newYValue | compiledClasses
+        '2'       | '-1'      | 'OnClass,OnField,InMethodBody'
+        '1'       | '-2'      | 'OnMethod,OnParameter'
+    }
+
 }

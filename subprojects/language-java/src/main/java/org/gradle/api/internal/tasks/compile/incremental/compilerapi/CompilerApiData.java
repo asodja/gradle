@@ -30,18 +30,25 @@ import java.util.Set;
 
 public class CompilerApiData {
 
+    private final boolean isAvailable;
     private final Map<Integer, Set<String>> constantToClassMapping;
 
     public CompilerApiData() {
         this.constantToClassMapping = Collections.emptyMap();
+        this.isAvailable = false;
     }
 
     public CompilerApiData(Map<Integer, Set<String>> classToConstantsMapping) {
+        this.isAvailable = true;
         this.constantToClassMapping = classToConstantsMapping;
     }
 
     public Map<Integer, Set<String>> getConstantToClassMapping() {
         return constantToClassMapping;
+    }
+
+    public boolean isAvailable() {
+        return isAvailable;
     }
 
     public static final class Serializer extends AbstractSerializer<CompilerApiData> {

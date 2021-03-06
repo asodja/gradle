@@ -107,6 +107,9 @@ public class ClassSetAnalysis {
         if (deps.isDependencyToAll()) {
             return deps;
         }
+        if (!constants.isEmpty() && !compilerApiData.isAvailable()) {
+            return DependentsSet.dependencyToAll();
+        }
         Set<String> classesDependingOnAllOthers = annotationProcessingData.participatesInClassGeneration(className) ? annotationProcessingData.getGeneratedTypesDependingOnAllOthers() : Collections.emptySet();
         Set<GeneratedResource> resourcesDependingOnAllOthers = annotationProcessingData.participatesInResourceGeneration(className) ? annotationProcessingData.getGeneratedResourcesDependingOnAllOthers() : Collections.emptySet();
         if (!deps.hasDependentClasses() && classesDependingOnAllOthers.isEmpty() && resourcesDependingOnAllOthers.isEmpty()) {

@@ -86,6 +86,7 @@ import java.util.List;
 import java.util.concurrent.Callable;
 
 import static com.google.common.base.Preconditions.checkState;
+import static org.gradle.api.internal.tasks.compile.SourceClassesMappingFileAccessor.mergeIncrementalMappingsIntoOldMappings;
 
 /**
  * Compiles Java source files.
@@ -164,18 +165,18 @@ public class JavaCompile extends AbstractCompile implements HasCompileOptions {
     }
 
     private void performIncrementalCompilation(InputChanges inputs, DefaultJavaCompileSpec spec) {
-        boolean isUsingCliCompiler = isUsingCliCompiler(spec);
+        spec.getCompileOptions().setSupportsCompilerApi(!isUsingCliCompiler(spec));
 
         // Read sources mapping
         File sourceClassesMappingFile = getSourceClassesMappingFile();
         Multimap<String, String> classToFileMapping;
         SourceFileClassNameConverter sourceFileClassNameConverter;
-        if (isUsingCliCompiler) {
-            classToFileMapping = null;
-            sourceFileClassNameConverter = new FileNameDerivingClassNameConverter();
-        } else {
+        if (spec.getCompileOptions().supportsCompilerApi()) {
             classToFileMapping = SourceClassesMappingFileAccessor.readSourceClassesMappingFile(sourceClassesMappingFile);
             sourceFileClassNameConverter = new DefaultSourceFileClassNameConverter(classToFileMapping);
+        } else {
+            classToFileMapping = null;
+            sourceFileClassNameConverter = new FileNameDerivingClassNameConverter();
         }
         sourceClassesMappingFile.delete();
         spec.getCompileOptions().setIncrementalCompilationClassesMappingFile(sourceClassesMappingFile);
@@ -187,10 +188,10 @@ public class JavaCompile extends AbstractCompile implements HasCompileOptions {
         Compiler<JavaCompileSpec> compiler = createCompiler();
         compiler = makeIncremental(inputs, sourceFileClassNameConverter, (CleaningJavaCompiler<JavaCompileSpec>) compiler, getStableSources().getAsFileTree());
         WorkResult workResult = performCompilation(spec, compiler);
-        if (workResult instanceof IncrementalCompilationResult && !isUsingCliCompiler) {
+        if (classToFileMapping != null && workResult instanceof IncrementalCompilationResult && spec.getCompileOptions().supportsCompilerApi()) {
             // The compilation will generate the new mapping file
             // Only merge old mappings into new mapping on incremental recompilation
-            SourceClassesMappingFileAccessor.mergeIncrementalMappingsIntoOldMappings(sourceClassesMappingFile, getStableSources(), inputs, classToFileMapping);
+            mergeIncrementalMappingsIntoOldMappings(sourceClassesMappingFile, getStableSources(), inputs, classToFileMapping);
         }
     }
 

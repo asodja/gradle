@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 the original author or authors.
+ * Copyright 2021 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,15 @@
  * limitations under the License.
  */
 
+package org.gradle.internal.compiler.java.testclasses.annotations;
 
-package org.gradle.java.compile.incremental
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-import org.gradle.integtests.fixtures.CompiledLanguage
-
-class CrossTaskIncrementalGroovyCompilationUsingJarIntegrationTest extends AbstractCrossTaskIncrementalGroovyCompilationIntegrationTest {
-    CompiledLanguage language = CompiledLanguage.GROOVY
-    boolean useJar = true
+@Retention(RetentionPolicy.CLASS)
+@Target(ElementType.PACKAGE)
+public @interface PackageInfo {
+    String value();
 }

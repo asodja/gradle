@@ -46,6 +46,7 @@ class ConstantsCollectorTest extends Specification {
         compiler.compile("org.gradle.internal.compiler.java.testclasses.StaticImportTestClass", clazz)
 
         then:
+        println collectedConstants
         collectedConstants.size() == 1
         collectedConstants.containsKey("org.gradle.internal.compiler.java.testclasses.StaticImportTestClass")
         def classes = collectedConstants["org.gradle.internal.compiler.java.testclasses.StaticImportTestClass"]
@@ -89,6 +90,22 @@ class ConstantsCollectorTest extends Specification {
             "org.gradle.internal.compiler.java.testclasses.constants.annotationtest.ConstantOnDefaultValue|CONSTANT_ON_DEFAULT_VALUE",
             "org.gradle.internal.compiler.java.testclasses.constants.annotationtest.ConstantOnClassAnnotation|CONSTANT_ON_CLASS_ANNOTATION",
             "org.gradle.internal.compiler.java.testclasses.constants.annotationtest.ConstantOnValueAnnotation|CONSTANT_ON_VALUE_ANNOTATION"
+        )
+    }
+
+    def "collect all statically imported constants for package-info class"() {
+        given:
+        String clazz = loadClassToString("packageinfo/package-info.java")
+
+        when:
+        compiler.compile("org.gradle.internal.compiler.java.testclasses.packageinfo.package-info", clazz)
+
+        then:
+        collectedConstants.size() == 1
+        collectedConstants.keySet().first() == "org.gradle.internal.compiler.java.testclasses.packageinfo"
+        def classes = collectedConstants["org.gradle.internal.compiler.java.testclasses"]
+        assertThat classes containsExactlyInAnyOrder(
+            "org.gradle.internal.compiler.java.testclasses.constants.packageinfo.PackageInfoConstant"
         )
     }
 
