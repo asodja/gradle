@@ -16,6 +16,6 @@
 
 package org.gradle.internal.compiler.java.testclasses.constants.classtest;
 
-public class ConstantInitConstant {
-    public static final int x = 1;
+public class ReferenceConstant {
+    public static final int REFERENCE_CONSTANT = 1;
 }

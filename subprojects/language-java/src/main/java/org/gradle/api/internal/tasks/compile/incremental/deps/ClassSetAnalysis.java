@@ -112,7 +112,8 @@ public class ClassSetAnalysis {
         }
         Set<String> classesDependingOnAllOthers = annotationProcessingData.participatesInClassGeneration(className) ? annotationProcessingData.getGeneratedTypesDependingOnAllOthers() : Collections.emptySet();
         Set<GeneratedResource> resourcesDependingOnAllOthers = annotationProcessingData.participatesInResourceGeneration(className) ? annotationProcessingData.getGeneratedResourcesDependingOnAllOthers() : Collections.emptySet();
-        if (!deps.hasDependentClasses() && classesDependingOnAllOthers.isEmpty() && resourcesDependingOnAllOthers.isEmpty()) {
+        Set<String> constantDependants = compilerApiData.getConstantToClassMapping().getOrDefault(className.hashCode(), Collections.emptySet());
+        if (!deps.hasDependentClasses() && classesDependingOnAllOthers.isEmpty() && resourcesDependingOnAllOthers.isEmpty() && constantDependants.isEmpty()) {
             return deps;
         }
 
@@ -123,6 +124,7 @@ public class ClassSetAnalysis {
         Set<GeneratedResource> resultResources = new HashSet<>(resourcesDependingOnAllOthers);
         processDependentClasses(new HashSet<>(), privateResultClasses, accessibleResultClasses, resultResources, deps.getPrivateDependentClasses(), dependents);
         processDependentClasses(new HashSet<>(), privateResultClasses, accessibleResultClasses, resultResources, Collections.emptySet(), classesDependingOnAllOthers);
+        processDependentClasses(new HashSet<>(), privateResultClasses, accessibleResultClasses, resultResources, Collections.emptySet(), constantDependants);
         accessibleResultClasses.remove(className);
         privateResultClasses.remove(className);
 

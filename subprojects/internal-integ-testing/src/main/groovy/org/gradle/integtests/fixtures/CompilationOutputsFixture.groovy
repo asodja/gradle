@@ -72,6 +72,10 @@ class CompilationOutputsFixture {
         recompiledFiles([])
     }
 
+    void noneRecompiledSince(long time) {
+        recompiledClassesSince(time, new String[0])
+    }
+
     //asserts file changed/added since last snapshot
     void recompiledFile(File file) {
         recompiledFiles([file])
@@ -108,6 +112,10 @@ class CompilationOutputsFixture {
     //asserts classes changed/added since last snapshot. Class means file name without extension.
     void recompiledClasses(String... classNames) {
         assert changedFileNames == asSet(classNames)
+    }
+
+    void recompiledClassesSince(long time, String... classNames) {
+        assert getFiles(true) { it.lastModified() > time } == asSet(classNames)
     }
 
     void recompiledFqn(String... classNames) {

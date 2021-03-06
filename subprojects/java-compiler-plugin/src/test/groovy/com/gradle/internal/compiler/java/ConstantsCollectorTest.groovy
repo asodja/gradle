@@ -24,6 +24,7 @@ import java.nio.file.Files
 import java.nio.file.Paths
 
 import static org.assertj.core.api.Assertions.assertThat
+import static org.spockframework.util.CollectionUtil.asSet
 
 class ConstantsCollectorTest extends Specification {
 
@@ -51,26 +52,26 @@ class ConstantsCollectorTest extends Specification {
         collectedConstants.containsKey("org.gradle.internal.compiler.java.testclasses.StaticImportTestClass")
         def classes = collectedConstants["org.gradle.internal.compiler.java.testclasses.StaticImportTestClass"]
         assertThat classes containsExactlyInAnyOrder(
-            "org.gradle.internal.compiler.java.testclasses.constants.classtest.ForLoopAssignOpConstant|ASSIGN_OP",
-            "org.gradle.internal.compiler.java.testclasses.constants.classtest.AnnOnClass|ANN_ON_CLASS",
-            "org.gradle.internal.compiler.java.testclasses.constants.classtest.AnnConstantOnConstructor|ANN_ON_CONSTRUCTOR",
-            "org.gradle.internal.compiler.java.testclasses.constants.classtest.AnnConstantOnConstructorArgument|ANN_ON_CONSTRUCTOR_ARG",
-            "org.gradle.internal.compiler.java.testclasses.constants.classtest.FinalFieldDeclarationConstant|FINAL_FIELD_DECLARATION",
-            "org.gradle.internal.compiler.java.testclasses.constants.classtest.FieldDeclarationConstant|FIELD_DECLARATION",
-            "org.gradle.internal.compiler.java.testclasses.constants.classtest.AnnOnClassTypeParam|ANN_ON_CLASS_TYPE_PARAM",
-            "org.gradle.internal.compiler.java.testclasses.constants.classtest.AnnConstantOnMethodArgument|ANN_CONSTANT_ON_METHOD_ARGUMENT",
-            "org.gradle.internal.compiler.java.testclasses.constants.classtest.ForLoopConditionConstant|COND",
-            "org.gradle.internal.compiler.java.testclasses.constants.classtest.AnnOnLocalFieldConstant|LOCAL_FIELD",
-            "org.gradle.internal.compiler.java.testclasses.constants.classtest.LambdaConstant|LAMBDA",
-            "org.gradle.internal.compiler.java.testclasses.constants.classtest.StaticFinalFieldDeclarationConstant|STATIC_FINAL_FIELD_DECLERATION",
-            "org.gradle.internal.compiler.java.testclasses.constants.classtest.AnnConstantOnMethodTypeParam|ANN_CONSTANT_ON_METHOD_TYPE_PARAM",
-            "org.gradle.internal.compiler.java.testclasses.constants.classtest.IfConditionConstant|IF_CONDITION",
-            "org.gradle.internal.compiler.java.testclasses.constants.classtest.AnnConstantOnFieldTypeParam|ANN_ON_CONSTANT_FIELD_TYPE",
-            "org.gradle.internal.compiler.java.testclasses.constants.classtest.AnnConstantOnField|ANN_ON_FIELD",
-            "org.gradle.internal.compiler.java.testclasses.constants.classtest.SwitchCaseConstant|SWITCH_CASE",
-            "org.gradle.internal.compiler.java.testclasses.constants.classtest.ConstructorFieldConstant|CONSTRUCTOR_FIELD_CONSTANT",
-            "org.gradle.internal.compiler.java.testclasses.constants.classtest.AnnConstantOnMethod|ANN_ON_METHOD",
-            "org.gradle.internal.compiler.java.testclasses.constants.classtest.ForLoopInitConstant|FOR_LOOP_INIT"
+            "org.gradle.internal.compiler.java.testclasses.constants.classtest.AnnConstantOnMethod",
+            "org.gradle.internal.compiler.java.testclasses.constants.classtest.AnnConstantOnMethodTypeParam",
+            "org.gradle.internal.compiler.java.testclasses.constants.classtest.AnnConstantOnConstructorArgument",
+            "org.gradle.internal.compiler.java.testclasses.constants.classtest.ForLoopConditionConstant",
+            "org.gradle.internal.compiler.java.testclasses.constants.classtest.AnnOnClassTypeParam",
+            "org.gradle.internal.compiler.java.testclasses.constants.classtest.ForLoopInitConstant",
+            "org.gradle.internal.compiler.java.testclasses.constants.classtest.AnnConstantOnField",
+            "org.gradle.internal.compiler.java.testclasses.constants.classtest.SwitchCaseConstant",
+            "org.gradle.internal.compiler.java.testclasses.constants.classtest.AnnConstantOnMethodArgument",
+            "org.gradle.internal.compiler.java.testclasses.constants.classtest.FinalFieldDeclarationConstant",
+            "org.gradle.internal.compiler.java.testclasses.constants.classtest.StaticFinalFieldDeclarationConstant",
+            "org.gradle.internal.compiler.java.testclasses.constants.classtest.AnnConstantOnFieldTypeParam",
+            "org.gradle.internal.compiler.java.testclasses.constants.classtest.ConstructorFieldConstant",
+            "org.gradle.internal.compiler.java.testclasses.constants.classtest.FieldDeclarationConstant",
+            "org.gradle.internal.compiler.java.testclasses.constants.classtest.IfConditionConstant",
+            "org.gradle.internal.compiler.java.testclasses.constants.classtest.AnnConstantOnConstructor",
+            "org.gradle.internal.compiler.java.testclasses.constants.classtest.AnnOnClass",
+            "org.gradle.internal.compiler.java.testclasses.constants.classtest.AnnOnLocalFieldConstant",
+            "org.gradle.internal.compiler.java.testclasses.constants.classtest.ForLoopAssignOpConstant",
+            "org.gradle.internal.compiler.java.testclasses.constants.classtest.LambdaConstant"
         )
     }
 
@@ -82,14 +83,13 @@ class ConstantsCollectorTest extends Specification {
         compiler.compile("org.gradle.internal.compiler.java.testclasses.AnnotationTestClass", clazz)
 
         then:
-        collectedConstants.size() == 1
-        collectedConstants.containsKey("org.gradle.internal.compiler.java.testclasses.AnnotationTestClass")
+        collectedConstants.keySet() == asSet("org.gradle.internal.compiler.java.testclasses.AnnotationTestClass")
         def classes = collectedConstants["org.gradle.internal.compiler.java.testclasses.AnnotationTestClass"]
         assertThat classes containsExactlyInAnyOrder(
-            "org.gradle.internal.compiler.java.testclasses.constants.annotationtest.ConstantOnDefaultArrayValue|CONSTANT_ON_DEFAULT_ARRAY_VALUE",
-            "org.gradle.internal.compiler.java.testclasses.constants.annotationtest.ConstantOnDefaultValue|CONSTANT_ON_DEFAULT_VALUE",
-            "org.gradle.internal.compiler.java.testclasses.constants.annotationtest.ConstantOnClassAnnotation|CONSTANT_ON_CLASS_ANNOTATION",
-            "org.gradle.internal.compiler.java.testclasses.constants.annotationtest.ConstantOnValueAnnotation|CONSTANT_ON_VALUE_ANNOTATION"
+            "org.gradle.internal.compiler.java.testclasses.constants.annotationtest.ConstantOnDefaultArrayValue",
+            "org.gradle.internal.compiler.java.testclasses.constants.annotationtest.ConstantOnClassAnnotation",
+            "org.gradle.internal.compiler.java.testclasses.constants.annotationtest.ConstantOnDefaultValue",
+            "org.gradle.internal.compiler.java.testclasses.constants.annotationtest.ConstantOnValueAnnotation"
         )
     }
 
@@ -108,6 +108,23 @@ class ConstantsCollectorTest extends Specification {
             "org.gradle.internal.compiler.java.testclasses.constants.packageinfo.PackageInfoConstant"
         )
     }
+
+    def "collect constants for chained constants reference"() {
+        given:
+        String clazz = loadClassToString("ReferenceConstantThirdTestClass.java")
+
+        when:
+        compiler.compile("org.gradle.internal.compiler.java.testclasses.ReferenceConstantThirdTestClass", clazz)
+
+        then:
+        collectedConstants.size() == 1
+        collectedConstants.keySet().first() == "org.gradle.internal.compiler.java.testclasses.ReferenceConstantThirdTestClass"
+        def classes = collectedConstants["org.gradle.internal.compiler.java.testclasses.ReferenceConstantThirdTestClass"]
+        assertThat classes containsExactlyInAnyOrder(
+            "org.gradle.internal.compiler.java.testclasses.ReferenceConstantSecondTestClass"
+        )
+    }
+
 
     static String loadClassToString(String className) {
         String workspaceDir = new File("").absolutePath

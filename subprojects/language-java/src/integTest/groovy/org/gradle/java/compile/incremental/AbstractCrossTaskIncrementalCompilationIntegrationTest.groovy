@@ -350,7 +350,7 @@ abstract class AbstractCrossTaskIncrementalCompilationIntegrationTest extends Ab
     @NotYetImplemented
     // It looks like this is hard to do for two reasons:
     // 1. Some compilers (e.g. OpenJDK) add constant origin classes to constant pool
-    // 2. Can be expensive to track constants and their value or there is chance for collision if hash is used
+    // 2. Can be expensive to track constants and their value (in case hash is used there is change for collision)
     def "ignores irrelevant changes to constant values"() {
         source api: ["class A {}", "class B { final static int x = 3; final static int y = -2; }"],
             impl: ["class X { int foo() { return B.x; }}", "class Y {int foo() { return B.y; }}"]
@@ -765,11 +765,12 @@ abstract class AbstractCrossTaskIncrementalCompilationIntegrationTest extends Ab
                @interface B { int value(); }"""
         ], impl: [
             // cases where it's relevant, ABI-wise
+            "class X {}",
             "@B(A.CST) class OnClass {}",
             "class OnMethod { @B(A.CST) void foo() {} }",
             "class OnField { @B(A.CST) String foo; }",
             "class OnParameter { void foo(@B(A.CST) int x) {} }",
-            "class InMethodBody { void foo(int x) { @B(A.CST) int value = 5; } }"
+            "class InMethodBody { void foo(int x) { @B(A.CST) int value = 5; } }",
         ]
 
         impl.snapshot { run("impl:${language.compileTaskName}") }
@@ -841,10 +842,11 @@ abstract class AbstractCrossTaskIncrementalCompilationIntegrationTest extends Ab
             """,
             "class A {}"
         ], impl: [
+            "class X {}",
             "@B(A.class) class OnClass {}",
             "class OnMethod { @B(A.class) void foo() {} }",
             "class OnField { @B(A.class) String foo; }",
-            "class OnParameter { void foo(@B(A.class) int x) {} }"
+            "class OnParameter { void foo(@B(A.class) int x) {} }",
         ]
 
         impl.snapshot { run language.compileTaskName }

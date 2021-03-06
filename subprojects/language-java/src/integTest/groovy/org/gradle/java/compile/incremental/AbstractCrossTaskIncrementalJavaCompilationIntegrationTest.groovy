@@ -26,8 +26,49 @@ abstract class AbstractCrossTaskIncrementalJavaCompilationIntegrationTest extend
     CompiledLanguage language = CompiledLanguage.JAVA
 
     @Unroll
+    def "change in an upstream class with non-private constant causes rebuild correctly incrementally"() {
+        source api: ["class A { final static int x = 1; }", "class B { final static int y = 1; }"], impl: ["class X { int foo() { return A.x; }}", "class Y {int foo() { return B.y; }}"]
+        impl.snapshot { run language.compileTaskName }
+
+        when:
+        // A is changed so we expect X to recompile
+        source api: ["class A { final static int x = 2; /* change */ void blah() { /* avoid flakiness by changing compiled file length*/ } }"]
+        run "impl:${language.compileTaskName}"
+
+        then:
+        impl.recompiledClasses('X')
+
+        when:
+        // B is changed so we expect Y to recompile
+        long lastClassChangeTime = System.currentTimeMillis()
+        source api: ["class B { final static int y = 2; /* change */ void blah() { /* avoid flakiness by changing compiled file length*/ } }"]
+        run "impl:${language.compileTaskName}"
+
+        then:
+        impl.recompiledClassesSince(lastClassChangeTime, 'Y')
+
+        when:
+        // A and B are changed so we expect X, Y to recompile
+        lastClassChangeTime = System.currentTimeMillis()
+        source api: ["class A { final static int x = 3; }",
+                     "class B { final static int y = 3; }"]
+        run "impl:${language.compileTaskName}"
+
+        then:
+        impl.recompiledClassesSince(lastClassChangeTime, 'X', 'Y')
+
+        when:
+        // No change, so we expect no recompilation
+        lastClassChangeTime = System.currentTimeMillis()
+        run "impl:${language.compileTaskName}"
+
+        then:
+        impl.noneRecompiledSince(lastClassChangeTime)
+    }
+
+    @Unroll
     def "change in an upstream class with non-private constant causes rebuild if constant is referenced in method body (#constantType)"() {
-        source api: ["class A {}", "class B { final static $constantType x = $constantValue; }"], impl: ["class ImplA extends A { $constantType foo() { return B.x; }}", "class ImplB {int foo() { return 2; }}"]
+        source api: ["class A {}", "class B { final static $constantType x = $constantValue; }"], impl: ["class ImplA { $constantType foo() { return B.x; }}", "class ImplB {int foo() { return 2; }}"]
         impl.snapshot { run language.compileTaskName }
 
         when:
@@ -52,7 +93,7 @@ abstract class AbstractCrossTaskIncrementalJavaCompilationIntegrationTest extend
 
     @Unroll
     def "change in an upstream class with non-private constant causes rebuild if constant is referenced in field (#constantType)"() {
-        source api: ["class A {}", "class B { final static $constantType x = $constantValue; }"], impl: ["class ImplA extends A { $constantType foo() { return B.x; }}", "class ImplB {int foo() { return 2; }}"]
+        source api: ["class A {}", "class B { final static $constantType x = $constantValue; }"], impl: ["class ImplA extends A { final $constantType foo = B.x; }", "class ImplB {int foo() { return 2; }}"]
         impl.snapshot { run language.compileTaskName }
 
         when:
@@ -64,15 +105,83 @@ abstract class AbstractCrossTaskIncrementalJavaCompilationIntegrationTest extend
 
         where:
         constantType | constantValue   | newValue
-        'boolean'    | 'false'         | 'true'
-        'byte'       | '(byte) 125'    | '(byte) 126'
-        'short'      | '(short) 666'   | '(short) 555'
         'int'        | '55542'         | '444'
-        'long'       | '5L'            | '689L'
-        'float'      | '6f'            | '6.5f'
-        'double'     | '7d'            | '7.2d'
-        'String'     | '"foo"'         | '"bar"'
         'String'     | '"foo" + "bar"' | '"bar"'
+    }
+
+    def "non-abi change to constant origin class does not causes compilation"() {
+        source impl: ["class A { final static int x = 1; int method() { return 1; } }", "class B { int method() { return A.x; }  }"]
+        impl.snapshot { run language.compileTaskName }
+
+        when:
+        source impl: ["class A { final static int x = 1; int method() { return 2; } }"]
+        run language.compileTaskName
+
+        then:
+        impl.recompiledClasses('A', 'B')
+    }
+
+    def "non-abi change to constant origin class does not causes compilation but constant change does incrementally"() {
+        source api: ["class A {}", "class B { final static int x = 1; int method() { return 1; } }"], impl: ["class X { int method() { return B.x; } }", "class Y {}"]
+        impl.snapshot { run language.compileTaskName }
+
+        when:
+        // non-abi-change
+        source api: ["class B { final static int x = 1; int method() { return 2; } }"]
+        run "impl:${language.compileTaskName}"
+
+        then:
+        impl.noneRecompiled()
+
+        when:
+        // Constant change
+        long lastClassChangeTime = System.currentTimeMillis()
+        source api: ["class B { final static int x = 2; int method() { return 2; } }"]
+        run "impl:${language.compileTaskName}"
+
+        then:
+        impl.recompiledClassesSince(lastClassChangeTime, 'X')
+
+        when:
+        // non-abi change
+        lastClassChangeTime = System.currentTimeMillis()
+        source api: ["class B { final static int x = 2; int method() { return 3; } }"]
+        run "impl:${language.compileTaskName}"
+
+        then:
+        impl.noneRecompiledSince(lastClassChangeTime)
+    }
+
+    def "changing upstream constant causes compilation for downstream constants"() {
+        source api: ["class A { final static int x = 1; }", "class B { final static int x = A.x; }"],
+            impl: ["class X { final static int x = B.x; }",
+                   "class Y { final static int x = X.x; }",
+                   "class Z { final static int x = Y.x; }",
+                   "class W {  }"]
+        impl.snapshot { run language.compileTaskName }
+
+        when:
+        source api: ["class A { final static int x = 2; /* change */ void blah() { /* avoid flakiness by changing compiled file length*/ } }"]
+        run "impl:${language.compileTaskName}"
+
+        then:
+        impl.recompiledClasses('X', 'Y', 'Z')
+    }
+
+    def "changing upstream constant causes compilation for downstream constants for binary expression"() {
+        source api: ["class A { final static int x = 1; }", "class B { final static int x = A.x + 1; }"],
+            impl: ["class X { final static int x = B.x + 1; }",
+                   "class Y { final static int x = X.x + 1; }",
+                   "class Z { final static int x = Y.x + 1; }",
+                   "class W {  }"]
+        impl.snapshot { run language.compileTaskName }
+
+        when:
+        source api: ["class A { final static int x = 2; /* change */ void blah() { /* avoid flakiness by changing compiled file length*/ } }"]
+        run "impl:${language.compileTaskName}"
+
+        then:
+        impl.recompiledClasses('X', 'Y', 'Z')
     }
 
     def "changing an unused non-private constant recompile child classes"() {
@@ -110,7 +219,7 @@ abstract class AbstractCrossTaskIncrementalJavaCompilationIntegrationTest extend
         run "impl:${language.compileTaskName}"
 
         then:
-        impl.recompiledClasses()
+        impl.noneRecompiled()
     }
 
     def "removing an unused non-private constant doesn't cause any compilation"() {
@@ -122,7 +231,7 @@ abstract class AbstractCrossTaskIncrementalJavaCompilationIntegrationTest extend
         run "impl:${language.compileTaskName}"
 
         then:
-        impl.recompiledClasses()
+        impl.noneRecompiled()
     }
 
     // This behavior is kept for backward compatibility - may be removed in the future
@@ -204,7 +313,7 @@ abstract class AbstractCrossTaskIncrementalJavaCompilationIntegrationTest extend
     }
 
     @NotYetImplemented
-    // This would be possible since constant origins on Annotations are not put to Constants pool, even on OpenJDK
+    // This would be possible since constant origins on Annotations are not put to Constants pool even on OpenJDK,
     // but it's not yet implemented since we would have to track every constants as (symbol, value) pair
     def "ignores irrelevant changes to constant values in annotations"() {
         source api: ["class A { final static int x = 1; final static int y = -1; }",
