@@ -78,6 +78,15 @@ public class ClassSetAnalysis {
         final Set<String> privateResultClasses = new LinkedHashSet<>();
         final Set<GeneratedResource> resultResources = new LinkedHashSet<>();
 
+        if (compilerApiData.isAvailable()) {
+//            System.out.println("Changed constants: " + constants);
+            for (int constant : constants) {
+//                System.out.println("Added constant dependents: " + compilerApiData.getConstantToClassMapping().getOrDefault(constant, Collections.emptySet()));
+
+                accessibleResultClasses.addAll(compilerApiData.getConstantToClassMapping().getOrDefault(constant, Collections.emptySet()));
+            }
+        }
+
         for (String cls : classes) {
             DependentsSet d = getRelevantDependents(cls, constants);
             if (d.isDependencyToAll()) {
@@ -105,6 +114,7 @@ public class ClassSetAnalysis {
 
         DependentsSet deps = getDependents(className);
         if (deps.isDependencyToAll()) {
+//            System.err.println("Checking: " + className + " unfortunate it's a deps to all :(");
             return deps;
         }
         if (!constants.isEmpty() && !compilerApiData.isAvailable()) {
@@ -114,6 +124,7 @@ public class ClassSetAnalysis {
         Set<GeneratedResource> resourcesDependingOnAllOthers = annotationProcessingData.participatesInResourceGeneration(className) ? annotationProcessingData.getGeneratedResourcesDependingOnAllOthers() : Collections.emptySet();
         Set<String> constantDependants = compilerApiData.getConstantToClassMapping().getOrDefault(className.hashCode(), Collections.emptySet());
         if (!deps.hasDependentClasses() && classesDependingOnAllOthers.isEmpty() && resourcesDependingOnAllOthers.isEmpty() && constantDependants.isEmpty()) {
+//            System.err.println("Checking: " + className + ", find deps: private: " + deps.getPrivateDependentClasses() + " accessible: " + deps.getAccessibleDependentClasses());
             return deps;
         }
 
@@ -127,8 +138,12 @@ public class ClassSetAnalysis {
         processDependentClasses(new HashSet<>(), privateResultClasses, accessibleResultClasses, resultResources, Collections.emptySet(), constantDependants);
         accessibleResultClasses.remove(className);
         privateResultClasses.remove(className);
-
-        return DependentsSet.dependents(privateResultClasses, accessibleResultClasses, resultResources);
+//        System.out.println("mapping: " + compilerApiData.getConstantToClassMapping());
+//        System.out.println("class hash: " + className.hashCode());
+//        System.err.println("constantDependants: " + constantDependants);
+        deps = DependentsSet.dependents(privateResultClasses, accessibleResultClasses, resultResources);
+//        System.err.println("Checking2: " + className + ", find deps: private: " + deps.getPrivateDependentClasses() + " accessible: " + deps.getAccessibleDependentClasses());
+        return deps;
     }
 
     public Set<String> getTypesToReprocess() {

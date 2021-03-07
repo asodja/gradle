@@ -111,19 +111,31 @@ class IncrementalResultStoringCompiler<T extends JavaCompileSpec> implements Com
     private CompilerApiData getCompilerApiData(JavaCompileSpec spec) {
         if (spec.getCompileOptions().supportsCompilerApi()) {
             File compilationClassToConstantsFile = spec.getCompileOptions().getIncrementalCompilationConstantsMappingFile();
-            return new CompilerApiData(transform(readConstantsClassesMappingFile(compilationClassToConstantsFile)));
+            if (previousCompilationStore.get() == null) {
+                return new CompilerApiData(transform(readConstantsClassesMappingFile(compilationClassToConstantsFile)));
+            } else {
+                Map<Integer, Set<String>> previousConstantToClassMapping = new Int2ObjectOpenHashMap<>(previousCompilationStore.get().getCompilerApiData().getConstantToClassMapping());
+                transform(readConstantsClassesMappingFile(compilationClassToConstantsFile)).forEach((c, v) -> {
+                    if (v.isEmpty()) {
+                        previousConstantToClassMapping.remove(c);
+                    } else {
+                        previousConstantToClassMapping.put(c, v);
+                    }
+                });
+                return new CompilerApiData(previousConstantToClassMapping);
+            }
         }
         return new CompilerApiData();
     }
 
     private Map<Integer, Set<String>> transform(Multimap<String, String> mapping) {
         Map<Integer, Set<String>> constantToClass = new Int2ObjectOpenHashMap<>();
-        mapping.asMap().forEach((className, constants) ->
-            constants.forEach(it -> {
-                int hash = it.hashCode();
-                constantToClass.computeIfAbsent(hash, (k) -> new ObjectOpenHashSet<>());
-                constantToClass.get(hash).add(className);
-            })
+        mapping.asMap().forEach((className, constantOrigin) -> {
+                constantOrigin.forEach(it -> {
+                    constantToClass.computeIfAbsent(constantOrigin.hashCode(), (k) -> new ObjectOpenHashSet<>());
+                    constantToClass.get(constantOrigin.hashCode()).add(className);
+                });
+            }
         );
         return constantToClass;
     }

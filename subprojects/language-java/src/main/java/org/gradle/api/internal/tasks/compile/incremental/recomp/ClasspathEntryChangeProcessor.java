@@ -33,7 +33,7 @@ public class ClasspathEntryChangeProcessor {
             spec.setFullRebuildCause(actualDependents.getDescription(), input.getFile());
             return;
         }
-        spec.addClassesToCompile(actualDependents.getPrivateDependentClasses());
+//        spec.addClassesToCompile(actualDependents.getPrivateDependentClasses());
         spec.addClassesToCompile(actualDependents.getAccessibleDependentClasses());
         spec.addResourcesToGenerate(actualDependents.getDependentResources());
     }
