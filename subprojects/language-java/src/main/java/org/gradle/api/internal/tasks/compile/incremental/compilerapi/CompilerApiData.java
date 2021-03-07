@@ -17,43 +17,38 @@
 package org.gradle.api.internal.tasks.compile.incremental.compilerapi;
 
 import org.gradle.api.internal.cache.StringInterner;
+import org.gradle.api.internal.tasks.compile.incremental.compilerapi.constants.ConstantToClassMapping;
 import org.gradle.internal.serialize.AbstractSerializer;
 import org.gradle.internal.serialize.Decoder;
 import org.gradle.internal.serialize.Encoder;
 
-import java.util.Collections;
 import java.util.Set;
 
 public class CompilerApiData {
 
     private final boolean isAvailable;
     private final ConstantToClassMapping constantToClassMapping;
-    private final ConstantsToClassMappingCache constantToClassMappingCache;
 
     public CompilerApiData() {
-        this(new ConstantToClassMapping(Collections.emptyList(), Collections.emptyMap()), false);
+        this.isAvailable = false;
+        this.constantToClassMapping = ConstantToClassMapping.empty();
     }
 
     public CompilerApiData(ConstantToClassMapping constantToClassMapping) {
-        this(constantToClassMapping, true);
-    }
-
-    private CompilerApiData(ConstantToClassMapping constantToClassMapping, boolean isAvailable) {
-        this.isAvailable = isAvailable;
+        this.isAvailable = true;
         this.constantToClassMapping = constantToClassMapping;
-        this.constantToClassMappingCache = new ConstantsToClassMappingCache(constantToClassMapping);
     }
 
     public Set<String> getDependentClassesForConstant(int constantHash) {
-        return constantToClassMappingCache.get(constantHash);
+        return constantToClassMapping.getDependentClasses(constantHash);
+    }
+
+    public ConstantToClassMapping getConstantToClassMapping() {
+        return constantToClassMapping;
     }
 
     public boolean isAvailable() {
         return isAvailable;
-    }
-
-    public ConstantToClassMapping getUncachedConstantToClassMapping() {
-        return constantToClassMapping;
     }
 
     public static final class Serializer extends AbstractSerializer<CompilerApiData> {
@@ -71,7 +66,7 @@ public class CompilerApiData {
 
         @Override
         public void write(Encoder encoder, CompilerApiData value) throws Exception {
-            constantsToClassSerializer.write(encoder, value.getUncachedConstantToClassMapping());
+            constantsToClassSerializer.write(encoder, value.getConstantToClassMapping());
         }
     }
 

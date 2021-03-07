@@ -16,5 +16,13 @@
 
 package org.gradle.internal.compiler.java.testclasses;
 
+import org.gradle.internal.compiler.java.testclasses.constants.nonprimitivetest.ConstantType;
+import org.gradle.internal.compiler.java.testclasses.constants.nonprimitivetest.EnumType;
+
 public class NonPrimitiveConstantTestClass {
+
+    public static final ConstantType NON_PRIMITIVE_CONSTANT = new ConstantType();
+
+    public static final EnumType ENUM_CONSTANT = EnumType.ENUM;
+
 }

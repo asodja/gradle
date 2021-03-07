@@ -14,11 +14,9 @@
  * limitations under the License.
  */
 
-package org.gradle.api.internal.tasks.compile;
+package org.gradle.api.internal.tasks.compile.incremental.compilerapi.constants;
 
 import com.google.common.base.Charsets;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.MultimapBuilder;
 import com.google.common.io.Files;
 import com.google.common.io.LineProcessor;
 import org.gradle.api.GradleException;
@@ -31,17 +29,16 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 
 public class ConstantsMappingFileAccessor {
     private static final int BUFFER_SIZE = 65536;
 
-    public static Multimap<String, String> readConstantsClassesMappingFile(File mappingFile) {
-        Multimap<String, String> sourceClassesMapping = MultimapBuilder.SetMultimapBuilder
-            .hashKeys()
-            .hashSetValues()
-            .build();
+    public static Map<String, Collection<String>> readConstantsClassesMappingFile(File mappingFile) {
+        Map<String, Collection<String>> sourceClassesMapping = new HashMap<>();
         if (!mappingFile.isFile()) {
             throw new GradleException("Constants class mapping is not a file as expected. Path to file: " + mappingFile.getAbsolutePath());
         }
@@ -52,9 +49,10 @@ public class ConstantsMappingFileAccessor {
                 @Override
                 public boolean processLine(String line) {
                     if (line.startsWith(" ")) {
-                        sourceClassesMapping.put(currentFile, line.substring(1));
+                        sourceClassesMapping.get(currentFile).add(line.substring(1));
                     } else {
                         currentFile = line;
+                        sourceClassesMapping.computeIfAbsent(line, (k) -> new ArrayList<>());
                     }
 
                     return true;
@@ -75,8 +73,8 @@ public class ConstantsMappingFileAccessor {
         try (Writer wrt = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(mappingFile, false), StandardCharsets.UTF_8), BUFFER_SIZE)) {
             for (Map.Entry<String, Collection<String>> entry : mapping.entrySet()) {
                 wrt.write(entry.getKey() + "\n");
-                for (String className : entry.getValue()) {
-                    wrt.write(" " + className + "\n");
+                for (String constantOrigin : entry.getValue()) {
+                    wrt.write(" " + constantOrigin + "\n");
                 }
             }
         } catch (IOException e) {

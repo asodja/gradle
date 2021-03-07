@@ -16,16 +16,13 @@
 
 package org.gradle.api.internal.tasks.compile.incremental.compilerapi.constants;
 
-import com.google.common.collect.Multimap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import org.gradle.api.NonNullApi;
-import org.gradle.api.internal.tasks.compile.incremental.compilerapi.ConstantToClassMapping;
 
 import javax.annotation.Nullable;
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -33,8 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import static org.gradle.api.internal.tasks.compile.ConstantsMappingFileAccessor.readConstantsClassesMappingFile;
 
 /**
  * Class used to merge new constants mapping from compiler api results with old results
@@ -44,22 +39,28 @@ import static org.gradle.api.internal.tasks.compile.ConstantsMappingFileAccessor
 @NonNullApi
 public class ConstantToClassMappingMerger {
 
-    public ConstantToClassMapping merge(File compilationClassToConstantsFile, @Nullable ConstantToClassMapping oldMapping, Set<String> removedClasses) {
-        Multimap<String, String> mapping = readConstantsClassesMappingFile(compilationClassToConstantsFile);
+    /**
+     * Merges mapping from CompilerApi in format:
+     *   Dependency -> collect of Constant origins and old ConstantToClassMapping
+     *
+     * To new ConstantToClassMapping in format (so it's reversed to compiler api output):
+     *   Constant origin hash -> collection of dependencies
+     */
+    public ConstantToClassMapping merge(Map<String, Collection<String>> mapping, @Nullable ConstantToClassMapping oldMapping, Set<String> removedClasses) {
         if (oldMapping == null) {
-            return doMerge(mapping, new ConstantToClassMapping(Collections.emptyList(), Collections.emptyMap()), removedClasses);
+            return doMerge(ConstantToClassMapping.of(Collections.emptyList(), Collections.emptyMap()), mapping, removedClasses);
         } else {
-            return doMerge(mapping, oldMapping, removedClasses);
+            return doMerge(oldMapping, mapping, removedClasses);
         }
     }
 
-    private ConstantToClassMapping doMerge(Multimap<String, String> newMapping, ConstantToClassMapping oldMapping, Set<String> removedClasses) {
+    private ConstantToClassMapping doMerge(ConstantToClassMapping oldMapping, Map<String, Collection<String>> newMap, Set<String> removedClasses) {
         // Convert previous data to similar format as we get it from compiler api
-        Map<String, IntSet> classesToConstants = toClassToConstantsMapping(oldMapping);
+        Map<String, IntSet> oldMap = toClassToConstantsMapping(oldMapping);
         // Update it
-        updateClassToConstantsMapping(classesToConstants, newMapping, removedClasses);
+        updateClassToConstantsMapping(oldMap, newMap, removedClasses);
         // Convert back to "memory efficient" format
-        return toConstantsToClassMapping(classesToConstants);
+        return toConstantsToClassMapping(oldMap);
     }
 
     private Map<String, IntSet> toClassToConstantsMapping(ConstantToClassMapping constantToClassMapping) {
@@ -74,23 +75,17 @@ public class ConstantToClassMappingMerger {
         return classToConstants;
     }
 
-    private void updateClassToConstantsMapping(Map<String, IntSet> classesToConstants, Multimap<String, String> newMapping, Set<String> removedClasses) {
-        newMapping.asMap().forEach((clazz, constantOrigins) -> {
+    private void updateClassToConstantsMapping(Map<String, IntSet> mapping, Map<String, Collection<String>> newMapping, Set<String> removedClasses) {
+        newMapping.forEach((clazz, constantOrigins) -> {
             if (constantOrigins.isEmpty() || removedClasses.contains(clazz)) {
                 // constantOrigins.isEmpty() means that all referenced constants were removed from class
-                classesToConstants.remove(clazz);
+                mapping.remove(clazz);
             } else {
-                classesToConstants.put(clazz, toSetOfConstantOriginHashes(constantOrigins));
+                IntSet hashes = new IntOpenHashSet(constantOrigins.size());
+                constantOrigins.forEach(it -> hashes.add(it.hashCode()));
+                mapping.put(clazz, hashes);
             }
         });
-    }
-
-    private IntSet toSetOfConstantOriginHashes(Collection<String> constantOrigins) {
-        IntSet constantOriginHashes = new IntOpenHashSet();
-        for (String constantOrigin : constantOrigins) {
-            constantOriginHashes.add(constantOrigin.hashCode());
-        }
-        return constantOriginHashes;
     }
 
     private ConstantToClassMapping toConstantsToClassMapping(Map<String, IntSet> classesToConstants) {
@@ -104,7 +99,7 @@ public class ConstantToClassMappingMerger {
             }
             currentIndex.incrementAndGet();
         });
-        return new ConstantToClassMapping(newClassNames, constantToClassIndexes);
+        return ConstantToClassMapping.of(newClassNames, constantToClassIndexes);
     }
 
 }

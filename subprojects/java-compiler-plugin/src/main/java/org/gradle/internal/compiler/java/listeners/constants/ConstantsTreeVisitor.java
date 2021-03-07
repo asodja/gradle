@@ -57,7 +57,7 @@ public class ConstantsTreeVisitor extends TreePathScanner<Collection<String>, Co
 
         // Collect classes for visited class
         String visitedClass = ((Symbol.TypeSymbol) element).getQualifiedName().toString();
-        super.visitPackage(node, mapping.computeIfAbsent(visitedClass, (k) -> new HashSet<>()));
+        super.visitPackage(node, mapping.computeIfAbsent(visitedClass, k -> new HashSet<>()));
         // Remove self
         mapping.get(visitedClass).remove(visitedClass);
 
@@ -71,7 +71,7 @@ public class ConstantsTreeVisitor extends TreePathScanner<Collection<String>, Co
 
         // Collect classes for visited class
         String visitedClass = getBinaryClassName((TypeElement) element);
-        super.visitClass(node, mapping.computeIfAbsent(visitedClass, (k) -> new HashSet<>()));
+        super.visitClass(node, mapping.computeIfAbsent(visitedClass, k -> new HashSet<>()));
         // Remove self
         mapping.get(visitedClass).remove(visitedClass);
 
@@ -97,7 +97,6 @@ public class ConstantsTreeVisitor extends TreePathScanner<Collection<String>, Co
         }
         return super.visitIdentifier(node, collectedClasses);
     }
-
 
     private String getBinaryClassName(TypeElement typeElement) {
         if (typeElement.getNestingKind().isNested()) {

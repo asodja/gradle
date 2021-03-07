@@ -20,8 +20,6 @@ import org.gradle.internal.compiler.java.testclasses.annotations.Annotation;
 
 import java.util.Map;
 
-import static org.gradle.internal.compiler.java.testclasses.constants.classtest.AnnOnClass.ANN_ON_CLASS;
-import static org.gradle.internal.compiler.java.testclasses.constants.classtest.AnnOnClassTypeParam.ANN_ON_CLASS_TYPE_PARAM;
 import static org.gradle.internal.compiler.java.testclasses.constants.classtest.AnnConstantOnConstructor.ANN_ON_CONSTRUCTOR;
 import static org.gradle.internal.compiler.java.testclasses.constants.classtest.AnnConstantOnConstructorArgument.ANN_ON_CONSTRUCTOR_ARG;
 import static org.gradle.internal.compiler.java.testclasses.constants.classtest.AnnConstantOnField.ANN_ON_FIELD;
@@ -29,6 +27,8 @@ import static org.gradle.internal.compiler.java.testclasses.constants.classtest.
 import static org.gradle.internal.compiler.java.testclasses.constants.classtest.AnnConstantOnMethod.ANN_ON_METHOD;
 import static org.gradle.internal.compiler.java.testclasses.constants.classtest.AnnConstantOnMethodArgument.ANN_CONSTANT_ON_METHOD_ARGUMENT;
 import static org.gradle.internal.compiler.java.testclasses.constants.classtest.AnnConstantOnMethodTypeParam.ANN_CONSTANT_ON_METHOD_TYPE_PARAM;
+import static org.gradle.internal.compiler.java.testclasses.constants.classtest.AnnOnClass.ANN_ON_CLASS;
+import static org.gradle.internal.compiler.java.testclasses.constants.classtest.AnnOnClassTypeParam.ANN_ON_CLASS_TYPE_PARAM;
 import static org.gradle.internal.compiler.java.testclasses.constants.classtest.AnnOnLocalFieldConstant.LOCAL_FIELD;
 import static org.gradle.internal.compiler.java.testclasses.constants.classtest.ConstructorFieldConstant.CONSTRUCTOR_FIELD_CONSTANT;
 import static org.gradle.internal.compiler.java.testclasses.constants.classtest.FieldDeclarationConstant.FIELD_DECLARATION;
@@ -41,41 +41,41 @@ import static org.gradle.internal.compiler.java.testclasses.constants.classtest.
 import static org.gradle.internal.compiler.java.testclasses.constants.classtest.StaticFinalFieldDeclarationConstant.STATIC_FINAL_FIELD_DECLERATION;
 import static org.gradle.internal.compiler.java.testclasses.constants.classtest.SwitchCaseConstant.SWITCH_CASE;
 
-@Annotation(ANN_ON_CLASS)
-public class StaticImportTestClass<@Annotation(ANN_ON_CLASS_TYPE_PARAM) T> {
+@Annotation(ANN_ON_CLASS + 1)
+class ExpressionTestClass<@Annotation(ANN_ON_CLASS_TYPE_PARAM + 1) T> {
 
     @Annotation(ANN_ON_FIELD)
-    private Map<@Annotation(ANN_ON_CONSTANT_FIELD_TYPE) String, String> field;
+    private Map<@Annotation(ANN_ON_CONSTANT_FIELD_TYPE + 1) String, String> field;
 
-    public static final int STATIC_FINAL_FIELD = STATIC_FINAL_FIELD_DECLERATION;
+    public static final int STATIC_FINAL_FIELD = STATIC_FINAL_FIELD_DECLERATION + 1;
 
-    public final int finalField = FINAL_FIELD_DECLARATION;
+    public final int finalField = FINAL_FIELD_DECLARATION + 1;
 
-    private int fieldDecleration = FIELD_DECLARATION;
+    private int fieldDecleration = FIELD_DECLARATION + 1;
 
-    @Annotation(ANN_ON_CONSTRUCTOR)
-    public StaticImportTestClass(@Annotation(ANN_ON_CONSTRUCTOR_ARG) String arg0) {
-        @Annotation(LOCAL_FIELD)
-        int constructorField = CONSTRUCTOR_FIELD_CONSTANT;
+    @Annotation(ANN_ON_CONSTRUCTOR + 1)
+    public ExpressionTestClass(@Annotation(ANN_ON_CONSTRUCTOR_ARG + 1) String arg0) {
+        @Annotation(LOCAL_FIELD + 1)
+        int constructorField = CONSTRUCTOR_FIELD_CONSTANT + 1;
     }
 
-    @Annotation(ANN_ON_METHOD)
-    <@Annotation(ANN_CONSTANT_ON_METHOD_TYPE_PARAM) T> T methodBody(
-        @Annotation(ANN_CONSTANT_ON_METHOD_ARGUMENT) String argument) {
+    @Annotation(ANN_ON_METHOD + 1)
+    <@Annotation(ANN_CONSTANT_ON_METHOD_TYPE_PARAM + 1) T> T methodBody(
+        @Annotation(ANN_CONSTANT_ON_METHOD_ARGUMENT + 1) String argument) {
         return null;
     }
 
-    @Annotation(ANN_ON_METHOD)
+    @Annotation(ANN_ON_METHOD + 1)
     void methodBody2() {
-        for (int i = FOR_LOOP_INIT; i < COND; i += ASSIGN_OP) {
-            @Annotation(LOCAL_FIELD)
-            Runnable run = () -> System.out.println(LAMBDA);
+        for (int i = FOR_LOOP_INIT + 1; i < COND + 1; i += ASSIGN_OP + 1) {
+            @Annotation(LOCAL_FIELD + 1)
+            Runnable run = () -> System.out.println(LAMBDA + 1);
             int value = 1;
-            if (value == IF_CONDITION) {
+            if (value == IF_CONDITION + 1) {
                 value = 2;
             }
             switch (value) {
-                case SWITCH_CASE:
+                case SWITCH_CASE + 1:
                 default:
             }
         }

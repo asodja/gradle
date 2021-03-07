@@ -17,6 +17,7 @@
 package org.gradle.api.internal.tasks.compile;
 
 import org.gradle.api.JavaVersion;
+import org.gradle.api.internal.tasks.compile.incremental.compilerapi.constants.ConstantsMappingFileAccessor;
 import org.gradle.internal.Cast;
 import org.gradle.internal.UncheckedException;
 import org.gradle.internal.classloader.ClassLoaderFactory;

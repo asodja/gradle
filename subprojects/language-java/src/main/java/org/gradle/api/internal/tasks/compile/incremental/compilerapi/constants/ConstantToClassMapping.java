@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.gradle.api.internal.tasks.compile.incremental.compilerapi;
+package org.gradle.api.internal.tasks.compile.incremental.compilerapi.constants;
 
 import it.unimi.dsi.fastutil.ints.IntSet;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
@@ -28,22 +28,26 @@ import org.gradle.internal.serialize.IntSetSerializer;
 import org.gradle.internal.serialize.InterningStringSerializer;
 import org.gradle.internal.serialize.ListSerializer;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * A data structure that holds constant to class mapping.
+ * It consists of dependents class names `classNames` and constantToClassIndexes `constant hash` => set(indexes) mapping.
+ *
+ * The idea here is that Strings take a lot of memory and there is one-to-many relationship between constant to dependents.
+ * So that is why we store String names of dependents in a separate list and we access them via indexes.
+ **/
 @NonNullApi
 public class ConstantToClassMapping {
 
-    /**
-     * A list of all class names. Can access class name by index located in constantToClassIndexes
-     * List is used for low memory-foot-print
-     **/
     private final List<String> classNames;
     private final Map<Integer, IntSet> constantToClassIndexes;
 
-    public ConstantToClassMapping(List<String> classNames,
+    private ConstantToClassMapping(List<String> classNames,
                                   Map<Integer, IntSet> constantToClassIndexes) {
         this.classNames = classNames;
         this.constantToClassIndexes = constantToClassIndexes;
@@ -58,18 +62,25 @@ public class ConstantToClassMapping {
     }
 
     public Set<String> getDependentClasses(int constantHash) {
-        if (!constantToClassIndexes.containsKey(constantHash)) {
-            return Collections.emptySet();
+        if (constantToClassIndexes.containsKey(constantHash)) {
+            IntSet classIndexes = constantToClassIndexes.get(constantHash);
+            Set<String> dependents = new ObjectOpenHashSet<>(classIndexes.size());
+            classIndexes.forEach(index -> dependents.add(classNames.get(index)));
+            return dependents;
         }
-        IntSet classIndexes = constantToClassIndexes.get(constantHash);
-        Set<String> dependents = new ObjectOpenHashSet<>(classIndexes.size());
-        for (int i : classIndexes) {
-            dependents.add(classNames.get(i));
-        }
-        return dependents;
+        return Collections.emptySet();
+    }
+
+    public static ConstantToClassMapping empty() {
+        return new ConstantToClassMapping(Collections.emptyList(), Collections.emptyMap());
+    }
+
+    static ConstantToClassMapping of(List<String> classNames, Map<Integer, IntSet> constantToClassIndexes) {
+        return new ConstantToClassMapping(classNames, constantToClassIndexes);
     }
 
     public static final class Serializer extends AbstractSerializer<ConstantToClassMapping> {
+
         private final Int2ObjectMapSerializer<IntSet> mapSerializer;
         private final ListSerializer<String> classNamesSerializer;
 

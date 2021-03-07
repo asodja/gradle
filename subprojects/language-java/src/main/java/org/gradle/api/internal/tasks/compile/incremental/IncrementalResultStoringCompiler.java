@@ -27,7 +27,7 @@ import org.gradle.api.internal.tasks.compile.JdkJavaCompilerResult;
 import org.gradle.api.internal.tasks.compile.incremental.classpath.ClasspathSnapshotData;
 import org.gradle.api.internal.tasks.compile.incremental.classpath.ClasspathSnapshotProvider;
 import org.gradle.api.internal.tasks.compile.incremental.compilerapi.CompilerApiData;
-import org.gradle.api.internal.tasks.compile.incremental.compilerapi.ConstantToClassMapping;
+import org.gradle.api.internal.tasks.compile.incremental.compilerapi.constants.ConstantToClassMapping;
 import org.gradle.api.internal.tasks.compile.incremental.compilerapi.constants.ConstantToClassMappingMerger;
 import org.gradle.api.internal.tasks.compile.incremental.processing.AnnotationProcessingData;
 import org.gradle.api.internal.tasks.compile.incremental.processing.AnnotationProcessingResult;
@@ -40,11 +40,13 @@ import org.gradle.api.tasks.WorkResult;
 import org.gradle.language.base.internal.compile.Compiler;
 
 import java.io.File;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
 import static org.gradle.api.internal.tasks.compile.SourceClassesMappingFileAccessor.mergeIncrementalMappingsIntoOldMappings;
+import static org.gradle.api.internal.tasks.compile.incremental.compilerapi.constants.ConstantsMappingFileAccessor.readConstantsClassesMappingFile;
 
 /**
  * Stores the incremental class dependency analysis after compilation has finished.
@@ -114,10 +116,11 @@ class IncrementalResultStoringCompiler<T extends JavaCompileSpec> implements Com
         if (spec.getCompileOptions().supportsCompilerApi()) {
             ConstantToClassMapping previousConstantToClassMapping = null;
             if (previousCompilationStore.get() != null) {
-                previousConstantToClassMapping = previousCompilationStore.get().getCompilerApiData().getUncachedConstantToClassMapping();
+                previousConstantToClassMapping = previousCompilationStore.get().getCompilerApiData().getConstantToClassMapping();
             }
             File compilationClassToConstantsFile = spec.getCompileOptions().getIncrementalCompilationConstantsMappingFile();
-            ConstantToClassMapping newConstantsMapping = new ConstantToClassMappingMerger().merge(compilationClassToConstantsFile, previousConstantToClassMapping, removedClasses);
+            Map<String, Collection<String>> newMapping = readConstantsClassesMappingFile(compilationClassToConstantsFile);
+            ConstantToClassMapping newConstantsMapping = new ConstantToClassMappingMerger().merge(newMapping, previousConstantToClassMapping, removedClasses);
             return new CompilerApiData(newConstantsMapping);
         }
 
@@ -125,7 +128,7 @@ class IncrementalResultStoringCompiler<T extends JavaCompileSpec> implements Com
     }
 
     private Set<String> mergeClassFileMappingAndReturnRemovedClasses(JavaCompileSpec spec, WorkResult workResult) {
-        File classToFileMappingFile = spec.getCompileOptions().getIncrementalCompilationConstantsMappingFile();
+        File classToFileMappingFile = spec.getCompileOptions().getIncrementalCompilationClassToFile();
 
         if (classToFileMappingFile != null && workResult instanceof IncrementalCompilationResult) {
             // The compilation will generate the new mapping file
