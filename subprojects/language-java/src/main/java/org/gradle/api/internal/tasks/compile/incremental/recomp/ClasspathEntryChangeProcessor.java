@@ -27,13 +27,15 @@ public class ClasspathEntryChangeProcessor {
         this.dependentsFinder = new ClasspathChangeDependentsFinder(classpathSnapshot, previousCompilation);
     }
 
-    public void processChange(InputFileDetails input, RecompilationSpec spec) {
+    public void processChange(InputFileDetails input, RecompilationSpec spec, CurrentCompilation current) {
         DependentsSet actualDependents = dependentsFinder.getActualDependents(input, input.getFile());
         if (actualDependents.isDependencyToAll()) {
             spec.setFullRebuildCause(actualDependents.getDescription(), input.getFile());
             return;
         }
-//        spec.addClassesToCompile(actualDependents.getPrivateDependentClasses());
+        if (!current.isConstantsTrackingEnabled()) {
+            spec.addClassesToCompile(actualDependents.getPrivateDependentClasses());
+        }
         spec.addClassesToCompile(actualDependents.getAccessibleDependentClasses());
         spec.addResourcesToGenerate(actualDependents.getDependentResources());
     }

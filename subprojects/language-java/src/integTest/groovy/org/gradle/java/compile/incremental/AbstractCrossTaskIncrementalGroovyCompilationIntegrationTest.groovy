@@ -23,26 +23,6 @@ import spock.lang.Unroll
 abstract class AbstractCrossTaskIncrementalGroovyCompilationIntegrationTest extends AbstractCrossTaskIncrementalCompilationIntegrationTest {
     CompiledLanguage language = CompiledLanguage.GROOVY
 
-    @ToBeFixedForConfigurationCache(
-        bottomSpecs = [
-            "CrossTaskIncrementalGroovyCompilationUsingClassDirectoryIntegrationTest",
-            "CrossTaskIncrementalGroovyCompilationUsingJarIntegrationTest"
-        ],
-        because = "gradle/configuration-cache#270"
-    )
-    // This is a constant test that is not incremental for Groovy
-    def "recompiles dependent class in case a constant is computed from another constant"() {
-        source api: ["class A { public static final int FOO = 10; }"], impl: ['class B { public static final int BAR = 2 + A.FOO; }', 'class C { }']
-        impl.snapshot { run language.compileTaskName }
-
-        when:
-        source api: ['class A { public static final int FOO = 100; }']
-        run "impl:${language.compileTaskName}"
-
-        then:
-        impl.recompiledClasses 'B', 'C'
-    }
-
     @Unroll
     // This is a constant test that is not incremental for Groovy
     def "recompiles outermost class when #visibility inner class contains constant reference"() {
@@ -70,6 +50,53 @@ abstract class AbstractCrossTaskIncrementalGroovyCompilationIntegrationTest exte
 
         where:
         visibility << ['public', 'private', '']
+    }
+
+    def "does full recompilation if change of constant value in annotation"() {
+        source api: [
+            "class A { public static final int CST = 0; }",
+            """import java.lang.annotation.Retention;
+               import java.lang.annotation.RetentionPolicy;
+               @Retention(RetentionPolicy.RUNTIME)
+               @interface B { int value(); }"""
+        ], impl: [
+            // cases where it's relevant, ABI-wise
+            "class X {}",
+            "@B(A.CST) class OnClass {}",
+            "class OnMethod { @B(A.CST) void foo() {} }",
+            "class OnField { @B(A.CST) String foo; }",
+            "class OnParameter { void foo(@B(A.CST) int x) {} }",
+            "class InMethodBody { void foo(int x) { @B(A.CST) int value = 5; } }",
+        ]
+
+        impl.snapshot { run("impl:${language.compileTaskName}") }
+
+        when:
+        source api: ["class A { public static final int CST = 1234; void blah() { /* avoid flakiness by changing compiled file length*/ } }"]
+        run("impl:${language.compileTaskName}")
+
+        then:
+        impl.recompiledClasses("OnClass", "OnMethod", "OnParameter", "OnField", "InMethodBody", "X")
+    }
+
+    @ToBeFixedForConfigurationCache(
+        bottomSpecs = [
+            "CrossTaskIncrementalGroovyCompilationUsingClassDirectoryIntegrationTest",
+            "CrossTaskIncrementalGroovyCompilationUsingJarIntegrationTest"
+        ],
+        because = "gradle/configuration-cache#270"
+    )
+    // This is a constant test that is not incremental for Groovy
+    def "does full recompilation in case a constant is computed from another constant"() {
+        source api: ["class A { public static final int FOO = 10; }"], impl: ['class B { public static final int BAR = 2 + A.FOO; }', 'class C { }']
+        impl.snapshot { run language.compileTaskName }
+
+        when:
+        source api: ['class A { public static final int FOO = 100; }']
+        run "impl:${language.compileTaskName}"
+
+        then:
+        impl.recompiledClasses 'B', 'C'
     }
 
 }

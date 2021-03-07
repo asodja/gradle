@@ -71,11 +71,11 @@ abstract class AbstractRecompilationSpecProvider implements RecompilationSpecPro
             switch (fileAlignment.getKind()) {
                 case added:
                     DefaultFileChange added = DefaultFileChange.added(fileAlignment.getCurrentValue().getAbsolutePath(), "classpathEntry", FileType.RegularFile, IgnoredPathFingerprintingStrategy.IGNORED_PATH);
-                    classpathEntryChangeProcessor.processChange(added, spec);
+                    classpathEntryChangeProcessor.processChange(added, spec, current);
                     break;
                 case removed:
                     DefaultFileChange removed = DefaultFileChange.removed(fileAlignment.getPreviousValue().getAbsolutePath(), "classpathEntry", FileType.RegularFile, IgnoredPathFingerprintingStrategy.IGNORED_PATH);
-                    classpathEntryChangeProcessor.processChange(removed, spec);
+                    classpathEntryChangeProcessor.processChange(removed, spec, current);
                     break;
                 case transformed:
                     // If we detect a transformation in the classpath, we need to recompile, because we could typically be facing the case where
@@ -88,7 +88,7 @@ abstract class AbstractRecompilationSpecProvider implements RecompilationSpecPro
                     ClasspathEntrySnapshot snapshot = currentSnapshots.getSnapshot(key);
                     if (previousSnapshot == null || !snapshot.getHash().equals(previousSnapshot.getHash())) {
                         DefaultFileChange modified = DefaultFileChange.modified(key.getAbsolutePath(), "classpathEntry", FileType.RegularFile, FileType.RegularFile, IgnoredPathFingerprintingStrategy.IGNORED_PATH);
-                        classpathEntryChangeProcessor.processChange(modified, spec);
+                        classpathEntryChangeProcessor.processChange(modified, spec, current);
                     }
                     break;
             }

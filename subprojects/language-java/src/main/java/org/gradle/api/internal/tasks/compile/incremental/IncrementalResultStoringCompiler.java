@@ -109,16 +109,18 @@ class IncrementalResultStoringCompiler<T extends JavaCompileSpec> implements Com
     }
 
     private CompilerApiData getCompilerApiData(JavaCompileSpec spec, WorkResult workResult) {
+        Set<String> removedClasses = mergeClassFileMappingAndReturnRemovedClasses(spec, workResult);
+
         if (spec.getCompileOptions().supportsCompilerApi()) {
             ConstantToClassMapping previousConstantToClassMapping = null;
             if (previousCompilationStore.get() != null) {
                 previousConstantToClassMapping = previousCompilationStore.get().getCompilerApiData().getUncachedConstantToClassMapping();
             }
-            Set<String> removedClasses = mergeClassFileMappingAndReturnRemovedClasses(spec, workResult);
             File compilationClassToConstantsFile = spec.getCompileOptions().getIncrementalCompilationConstantsMappingFile();
             ConstantToClassMapping newConstantsMapping = new ConstantToClassMappingMerger().merge(compilationClassToConstantsFile, previousConstantToClassMapping, removedClasses);
             return new CompilerApiData(newConstantsMapping);
         }
+
         return new CompilerApiData();
     }
 

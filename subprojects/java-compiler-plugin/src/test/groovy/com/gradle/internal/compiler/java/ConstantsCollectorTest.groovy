@@ -17,6 +17,7 @@
 package com.gradle.internal.compiler.java
 
 import org.gradle.internal.compiler.java.testclasses.compiler.TestCompiler
+import spock.lang.Requires
 import spock.lang.Specification
 
 import java.nio.charset.StandardCharsets
@@ -97,6 +98,7 @@ class ConstantsCollectorTest extends Specification {
         )
     }
 
+    @Requires({ javaVersion >= 12 })
     def "collect all statically imported constants for package-info class"() {
         given:
         String clazz = loadClassToString("packageinfo/package-info.java")

@@ -40,4 +40,9 @@ public class CurrentCompilation {
     public Collection<File> getAnnotationProcessorPath() {
         return spec.getAnnotationProcessorPath();
     }
+
+    public boolean isConstantsTrackingEnabled() {
+        return spec.getCompileOptions().supportsCompilerApi();
+    }
+
 }
