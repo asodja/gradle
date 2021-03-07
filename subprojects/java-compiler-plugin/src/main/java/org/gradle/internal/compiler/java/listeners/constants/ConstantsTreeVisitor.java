@@ -16,7 +16,6 @@
 
 package org.gradle.internal.compiler.java.listeners.constants;
 
-import com.sun.source.tree.AnnotationTree;
 import com.sun.source.tree.ClassTree;
 import com.sun.source.tree.IdentifierTree;
 import com.sun.source.tree.MemberSelectTree;
@@ -28,16 +27,19 @@ import com.sun.tools.javac.code.Symbol;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
+import javax.lang.model.util.Elements;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
 
 public class ConstantsTreeVisitor extends TreePathScanner<Collection<String>, Collection<String>> {
 
+    private final Elements elements;
     private final Trees trees;
     private final Map<String, Collection<String>> mapping;
 
-    public ConstantsTreeVisitor(Trees trees, Map<String, Collection<String>> mapping) {
+    public ConstantsTreeVisitor(Elements elements, Trees trees, Map<String, Collection<String>> mapping) {
+        this.elements = elements;
         this.trees = trees;
         this.mapping = mapping;
     }
@@ -50,9 +52,8 @@ public class ConstantsTreeVisitor extends TreePathScanner<Collection<String>, Co
         // Collect classes for visited class
         String visitedClass = ((Symbol.TypeSymbol) element).getQualifiedName().toString();
         super.visitPackage(node, mapping.computeIfAbsent(visitedClass, (k) -> new HashSet<>()));
-        if (mapping.get(visitedClass).isEmpty()) {
-            mapping.remove(visitedClass);
-        }
+        // Remove self
+        mapping.get(visitedClass).remove(visitedClass);
 
         // Return back previous collected classes
         return collectedClasses;
@@ -63,11 +64,10 @@ public class ConstantsTreeVisitor extends TreePathScanner<Collection<String>, Co
         Element element = trees.getElement(getCurrentPath());
 
         // Collect classes for visited class
-        String visitedClass = ((TypeElement) element).getQualifiedName().toString();
+        String visitedClass = getBinaryClassName((TypeElement) element);
         super.visitClass(node, mapping.computeIfAbsent(visitedClass, (k) -> new HashSet<>()));
-        if (mapping.get(visitedClass).isEmpty()) {
-            mapping.remove(visitedClass);
-        }
+        // Remove self
+        mapping.get(visitedClass).remove(visitedClass);
 
         // Return back previous collected classes
         return collectedClasses;
@@ -77,7 +77,7 @@ public class ConstantsTreeVisitor extends TreePathScanner<Collection<String>, Co
     public Collection<String> visitMemberSelect(MemberSelectTree node, Collection<String> collectedClasses) {
         Element element = trees.getElement(getCurrentPath());
         if (isPrimitiveConstantVariable(element)) {
-            collectedClasses.add(element.getEnclosingElement().toString());
+            collectedClasses.add(getBinaryClassName((TypeElement) element.getEnclosingElement()));
         }
         return super.visitMemberSelect(node, collectedClasses);
     }
@@ -87,9 +87,22 @@ public class ConstantsTreeVisitor extends TreePathScanner<Collection<String>, Co
         Element element = trees.getElement(getCurrentPath());
 
         if (isPrimitiveConstantVariable(element)) {
-            collectedClasses.add(element.getEnclosingElement().toString());
+            collectedClasses.add(getBinaryClassName((TypeElement) element.getEnclosingElement()));
         }
         return super.visitIdentifier(node, collectedClasses);
+    }
+
+    private boolean isInnerClass(Element element) {
+        System.err.println(element.getKind());
+        return element instanceof VariableElement && ((VariableElement) element).getConstantValue() != null;
+    }
+
+    private String getBinaryClassName(TypeElement typeElement) {
+        if (typeElement.getNestingKind().isNested()) {
+            return elements.getBinaryName(typeElement).toString();
+        } else {
+            return typeElement.getQualifiedName().toString();
+        }
     }
 
     private boolean isPrimitiveConstantVariable(Element element) {

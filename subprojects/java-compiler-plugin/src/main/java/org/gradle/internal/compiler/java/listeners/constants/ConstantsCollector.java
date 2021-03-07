@@ -51,7 +51,7 @@ public class ConstantsCollector implements TaskListener {
     public void finished(TaskEvent e) {
         if (e.getKind() == Kind.ANALYZE) {
             Trees trees = Trees.instance(task);
-            ConstantsTreeVisitor visitor = new ConstantsTreeVisitor(trees, mapping);
+            ConstantsTreeVisitor visitor = new ConstantsTreeVisitor(task.getElements(), trees, mapping);
             TreePath path = trees.getPath(e.getCompilationUnit(), e.getCompilationUnit());
             visitor.scan(path, new HashSet<>());
         }

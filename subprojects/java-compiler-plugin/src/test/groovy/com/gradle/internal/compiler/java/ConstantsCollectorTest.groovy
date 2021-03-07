@@ -125,6 +125,23 @@ class ConstantsCollectorTest extends Specification {
         )
     }
 
+    def "collect constants for inner classes"() {
+        given:
+        String clazz = loadClassToString("InnerClassTestClass.java")
+
+        when:
+        compiler.compile("org.gradle.internal.compiler.java.testclasses.InnerClassTestClass", clazz)
+
+        then:
+        println collectedConstants
+//        collectedConstants.size() == 1
+//        collectedConstants.keySet().first() == "org.gradle.internal.compiler.java.testclasses.ReferenceConstantThirdTestClass"
+//        def classes = collectedConstants["org.gradle.internal.compiler.java.testclasses.ReferenceConstantThirdTestClass"]
+//        assertThat classes containsExactlyInAnyOrder(
+//            "org.gradle.internal.compiler.java.testclasses.ReferenceConstantSecondTestClass"
+//        )
+    }
+
 
     static String loadClassToString(String className) {
         String workspaceDir = new File("").absolutePath
