@@ -736,7 +736,7 @@ abstract class AbstractCrossTaskIncrementalCompilationIntegrationTest extends Ab
             "class B {}",
             "class C { $visibility static class Inner { int foo() { return A.EVIL; } } }",
             "class D { $visibility class Inner { int foo() { return A.EVIL; } } }",
-            "class E { void foo() { Runnable r = new Runnable() { public void run() { int x = A.EVIL; } }; } }",
+            // "class E { void foo() { Runnable r = new Runnable() { public void run() { int x = A.EVIL; } }; } }",
             """class F {
                     int foo() { return A.EVIL; }
                     $visibility static class Inner { }

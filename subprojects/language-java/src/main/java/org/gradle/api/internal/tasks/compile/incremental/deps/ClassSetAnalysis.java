@@ -78,14 +78,14 @@ public class ClassSetAnalysis {
         final Set<String> privateResultClasses = new LinkedHashSet<>();
         final Set<GeneratedResource> resultResources = new LinkedHashSet<>();
 
-        if (compilerApiData.isAvailable()) {
-//            System.out.println("Changed constants: " + constants);
-            for (int constant : constants) {
-//                System.out.println("Added constant dependents: " + compilerApiData.getConstantToClassMapping().getOrDefault(constant, Collections.emptySet()));
-
-                accessibleResultClasses.addAll(compilerApiData.getConstantToClassMapping().getOrDefault(constant, Collections.emptySet()));
-            }
-        }
+//        if (compilerApiData.isAvailable()) {
+////            System.out.println("Changed constants: " + constants);
+//            for (int constant : constants) {
+////                System.out.println("Added constant dependents: " + compilerApiData.getConstantToClassMapping().getOrDefault(constant, Collections.emptySet()));
+//
+//                accessibleResultClasses.addAll(compilerApiData.getConstantToClassMapping().getOrDefault(constant, Collections.emptySet()));
+//            }
+//        }
 
         for (String cls : classes) {
             DependentsSet d = getRelevantDependents(cls, constants);
@@ -138,11 +138,12 @@ public class ClassSetAnalysis {
         processDependentClasses(new HashSet<>(), privateResultClasses, accessibleResultClasses, resultResources, Collections.emptySet(), constantDependants);
         accessibleResultClasses.remove(className);
         privateResultClasses.remove(className);
-//        System.out.println("mapping: " + compilerApiData.getConstantToClassMapping());
-//        System.out.println("class hash: " + className.hashCode());
-//        System.err.println("constantDependants: " + constantDependants);
+        System.out.println("Analyzing: " + className);
+        System.out.println("mapping: " + compilerApiData.getConstantToClassMapping());
+        System.out.println("class hash: " + className.hashCode());
+        System.err.println("constantDependants: " + constantDependants);
         deps = DependentsSet.dependents(privateResultClasses, accessibleResultClasses, resultResources);
-//        System.err.println("Checking2: " + className + ", find deps: private: " + deps.getPrivateDependentClasses() + " accessible: " + deps.getAccessibleDependentClasses());
+        System.err.println("Checking2: " + className + ", find deps: private: " + deps.getPrivateDependentClasses() + " accessible: " + deps.getAccessibleDependentClasses());
         return deps;
     }
 
@@ -219,14 +220,19 @@ public class ClassSetAnalysis {
         ImmutableSet<String> annotationProcessingClassDeps = classDependenciesFromAnnotationProcessing.get(className);
         ImmutableSet<GeneratedResource> annotationProcessingResourceDeps = resourceDependenciesFromAnnotationProcessing.get(className);
         Set<String> constantsProcessingClassDeps = compilerApiData.getConstantToClassMapping().getOrDefault(className.hashCode(), Collections.emptySet());
+//        System.err.println("ANalyzing: " + className);
+//        System.err.println("All constants mapping: " + compilerApiData.getConstantToClassMapping());
+//        System.err.println("constantsProcessingClassDeps: " + constantsProcessingClassDeps);
         if (annotationProcessingClassDeps.isEmpty() && annotationProcessingResourceDeps.isEmpty() && constantsProcessingClassDeps.isEmpty()) {
             return dependents;
         }
         Set<String> additionalClassDeps = Sets.union(annotationProcessingClassDeps, constantsProcessingClassDeps);
-        return DependentsSet.dependents(dependents.getPrivateDependentClasses(),
+        DependentsSet deps = DependentsSet.dependents(dependents.getPrivateDependentClasses(),
             Sets.union(dependents.getAccessibleDependentClasses(), additionalClassDeps),
             Sets.union(dependents.getDependentResources(), annotationProcessingResourceDeps)
         );
+//        System.err.println("Deps: private: " + deps.getPrivateDependentClasses() + " accessible: " + deps.getAccessibleDependentClasses());
+        return deps;
     }
 
     public IntSet getConstants(String className) {
