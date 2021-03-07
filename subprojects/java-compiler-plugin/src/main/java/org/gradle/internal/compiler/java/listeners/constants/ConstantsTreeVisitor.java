@@ -17,6 +17,7 @@
 package org.gradle.internal.compiler.java.listeners.constants;
 
 import com.sun.source.tree.ClassTree;
+import com.sun.source.tree.CompilationUnitTree;
 import com.sun.source.tree.IdentifierTree;
 import com.sun.source.tree.MemberSelectTree;
 import com.sun.source.tree.PackageTree;
@@ -42,6 +43,11 @@ public class ConstantsTreeVisitor extends TreePathScanner<Collection<String>, Co
         this.elements = elements;
         this.trees = trees;
         this.mapping = mapping;
+    }
+
+    @Override
+    public Collection<String> visitCompilationUnit(CompilationUnitTree node, Collection<String> strings) {
+        return super.visitCompilationUnit(node, strings);
     }
 
     @Override
@@ -92,10 +98,6 @@ public class ConstantsTreeVisitor extends TreePathScanner<Collection<String>, Co
         return super.visitIdentifier(node, collectedClasses);
     }
 
-    private boolean isInnerClass(Element element) {
-        System.err.println(element.getKind());
-        return element instanceof VariableElement && ((VariableElement) element).getConstantValue() != null;
-    }
 
     private String getBinaryClassName(TypeElement typeElement) {
         if (typeElement.getNestingKind().isNested()) {
@@ -106,7 +108,9 @@ public class ConstantsTreeVisitor extends TreePathScanner<Collection<String>, Co
     }
 
     private boolean isPrimitiveConstantVariable(Element element) {
-        return element instanceof VariableElement && ((VariableElement) element).getConstantValue() != null;
+        return element instanceof VariableElement
+            && element.getEnclosingElement() instanceof TypeElement
+            && ((VariableElement) element).getConstantValue() != null;
     }
 
 }

@@ -47,9 +47,10 @@ class ConstantsCollectorTest extends Specification {
         compiler.compile("org.gradle.internal.compiler.java.testclasses.StaticImportTestClass", clazz)
 
         then:
-        println collectedConstants
-        collectedConstants.size() == 1
-        collectedConstants.containsKey("org.gradle.internal.compiler.java.testclasses.StaticImportTestClass")
+        assertThat collectedConstants.keySet() containsExactlyInAnyOrder(
+            "org.gradle.internal.compiler.java.testclasses",
+            "org.gradle.internal.compiler.java.testclasses.StaticImportTestClass"
+        )
         def classes = collectedConstants["org.gradle.internal.compiler.java.testclasses.StaticImportTestClass"]
         assertThat classes containsExactlyInAnyOrder(
             "org.gradle.internal.compiler.java.testclasses.constants.classtest.AnnConstantOnMethod",
@@ -83,7 +84,10 @@ class ConstantsCollectorTest extends Specification {
         compiler.compile("org.gradle.internal.compiler.java.testclasses.AnnotationTestClass", clazz)
 
         then:
-        collectedConstants.keySet() == asSet("org.gradle.internal.compiler.java.testclasses.AnnotationTestClass")
+        assertThat collectedConstants.keySet() containsExactlyInAnyOrder(
+            "org.gradle.internal.compiler.java.testclasses",
+            "org.gradle.internal.compiler.java.testclasses.AnnotationTestClass"
+        )
         def classes = collectedConstants["org.gradle.internal.compiler.java.testclasses.AnnotationTestClass"]
         assertThat classes containsExactlyInAnyOrder(
             "org.gradle.internal.compiler.java.testclasses.constants.annotationtest.ConstantOnDefaultArrayValue",
@@ -101,10 +105,8 @@ class ConstantsCollectorTest extends Specification {
         compiler.compile("org.gradle.internal.compiler.java.testclasses.packageinfo.package-info", clazz)
 
         then:
-        collectedConstants.size() == 1
-        collectedConstants.keySet().first() == "org.gradle.internal.compiler.java.testclasses.packageinfo"
-        def classes = collectedConstants["org.gradle.internal.compiler.java.testclasses"]
-        assertThat classes containsExactlyInAnyOrder(
+        collectedConstants.keySet() == asSet("org.gradle.internal.compiler.java.testclasses.packageinfo")
+        assertThat collectedConstants["org.gradle.internal.compiler.java.testclasses.packageinfo"] containsExactlyInAnyOrder(
             "org.gradle.internal.compiler.java.testclasses.constants.packageinfo.PackageInfoConstant"
         )
     }
@@ -117,8 +119,10 @@ class ConstantsCollectorTest extends Specification {
         compiler.compile("org.gradle.internal.compiler.java.testclasses.ReferenceConstantThirdTestClass", clazz)
 
         then:
-        collectedConstants.size() == 1
-        collectedConstants.keySet().first() == "org.gradle.internal.compiler.java.testclasses.ReferenceConstantThirdTestClass"
+        assertThat collectedConstants.keySet() containsExactlyInAnyOrder(
+            "org.gradle.internal.compiler.java.testclasses",
+            "org.gradle.internal.compiler.java.testclasses.ReferenceConstantThirdTestClass"
+        )
         def classes = collectedConstants["org.gradle.internal.compiler.java.testclasses.ReferenceConstantThirdTestClass"]
         assertThat classes containsExactlyInAnyOrder(
             "org.gradle.internal.compiler.java.testclasses.ReferenceConstantSecondTestClass"
@@ -133,13 +137,60 @@ class ConstantsCollectorTest extends Specification {
         compiler.compile("org.gradle.internal.compiler.java.testclasses.InnerClassTestClass", clazz)
 
         then:
-        println collectedConstants
-//        collectedConstants.size() == 1
-//        collectedConstants.keySet().first() == "org.gradle.internal.compiler.java.testclasses.ReferenceConstantThirdTestClass"
-//        def classes = collectedConstants["org.gradle.internal.compiler.java.testclasses.ReferenceConstantThirdTestClass"]
-//        assertThat classes containsExactlyInAnyOrder(
-//            "org.gradle.internal.compiler.java.testclasses.ReferenceConstantSecondTestClass"
-//        )
+        assertThat collectedConstants.keySet() containsExactlyInAnyOrder(
+            "org.gradle.internal.compiler.java.testclasses",
+            "org.gradle.internal.compiler.java.testclasses.InnerClassTestClass",
+            "org.gradle.internal.compiler.java.testclasses.InnerClassTestClass\$1",
+            "org.gradle.internal.compiler.java.testclasses.InnerClassTestClass\$InnerClass",
+            "org.gradle.internal.compiler.java.testclasses.InnerClassTestClass\$InnerStaticClass"
+        )
+        assertThat collectedConstants["org.gradle.internal.compiler.java.testclasses"].isEmpty()
+        assertThat collectedConstants["org.gradle.internal.compiler.java.testclasses.InnerClassTestClass"].isEmpty()
+        assertThat collectedConstants["org.gradle.internal.compiler.java.testclasses.InnerClassTestClass\$1"] containsExactlyInAnyOrder(
+            "org.gradle.internal.compiler.java.testclasses.constants.innerclasstest.AnonymousClassConstant",
+            "org.gradle.internal.compiler.java.testclasses.constants.innerclasstest.ClassWithInnerConstants\$InnerConstantClass",
+            "org.gradle.internal.compiler.java.testclasses.constants.innerclasstest.ClassWithInnerConstants\$InnerStaticConstantClass"
+        )
+        assertThat collectedConstants["org.gradle.internal.compiler.java.testclasses.InnerClassTestClass\$InnerClass"] containsExactlyInAnyOrder(
+            "org.gradle.internal.compiler.java.testclasses.constants.innerclasstest.InnerClassConstant",
+            "org.gradle.internal.compiler.java.testclasses.constants.innerclasstest.ClassWithInnerConstants\$InnerConstantClass",
+            "org.gradle.internal.compiler.java.testclasses.constants.innerclasstest.ClassWithInnerConstants\$InnerStaticConstantClass"
+        )
+        assertThat collectedConstants["org.gradle.internal.compiler.java.testclasses.InnerClassTestClass\$InnerStaticClass"] containsExactlyInAnyOrder(
+            "org.gradle.internal.compiler.java.testclasses.constants.innerclasstest.InnerStaticClassConstant",
+            "org.gradle.internal.compiler.java.testclasses.constants.innerclasstest.ClassWithInnerConstants\$InnerConstantClass",
+            "org.gradle.internal.compiler.java.testclasses.constants.innerclasstest.ClassWithInnerConstants\$InnerStaticConstantClass"
+        )
+    }
+
+    def "should not return self as a constant origin class"() {
+        given:
+        String clazz = loadClassToString("SelfReferenceTestClass.java")
+
+        when:
+        compiler.compile("org.gradle.internal.compiler.java.testclasses.SelfReferenceTestClass", clazz)
+
+        then:
+        assertThat collectedConstants.keySet() containsExactlyInAnyOrder(
+            "org.gradle.internal.compiler.java.testclasses",
+            "org.gradle.internal.compiler.java.testclasses.SelfReferenceTestClass"
+        )
+        collectedConstants["org.gradle.internal.compiler.java.testclasses.SelfReferenceTestClass"].isEmpty()
+    }
+
+    def "should not collect non-primitive constants"() {
+        given:
+        String clazz = loadClassToString("NonPrimitiveConstantTestClass.java")
+
+        when:
+        compiler.compile("org.gradle.internal.compiler.java.testclasses.NonPrimitiveConstantTestClass", clazz)
+
+        then:
+        assertThat collectedConstants.keySet() containsExactlyInAnyOrder(
+            "org.gradle.internal.compiler.java.testclasses",
+            "org.gradle.internal.compiler.java.testclasses.NonPrimitiveConstantTestClass"
+        )
+        collectedConstants["org.gradle.internal.compiler.java.testclasses.NonPrimitiveConstantTestClass"].isEmpty()
     }
 
 

@@ -16,61 +16,49 @@
 
 package org.gradle.internal.compiler.java.testclasses;
 
-import static org.gradle.internal.compiler.java.testclasses.InnerClassTestClass.InnerConstantClass.CONSTANT_IN_INNER_CLASS;
-import static org.gradle.internal.compiler.java.testclasses.InnerClassTestClass.InnerStaticConstantClass.CONSTANT_IN_STATIC_INNER_CLASS;
 import static org.gradle.internal.compiler.java.testclasses.constants.innerclasstest.AnonymousClassConstant.ANONYMOUS_CLASS_CONSTANT;
+import static org.gradle.internal.compiler.java.testclasses.constants.innerclasstest.ClassWithInnerConstants.InnerConstantClass.CONSTANT_IN_INNER_CLASS;
+import static org.gradle.internal.compiler.java.testclasses.constants.innerclasstest.ClassWithInnerConstants.InnerStaticConstantClass.CONSTANT_IN_STATIC_INNER_CLASS;
 import static org.gradle.internal.compiler.java.testclasses.constants.innerclasstest.InnerClassConstant.INNER_CLASS_CONSTANT;
 import static org.gradle.internal.compiler.java.testclasses.constants.innerclasstest.InnerStaticClassConstant.INNER_STATIC_CLASS_CONSTANT;
 
 public class InnerClassTestClass {
 
-    @Override
-    public int hashCode() {
-        return 5;
-    }
 
     void method() {
         @SuppressWarnings("Convert2Lambda")
         Runnable annonymousClass = new Runnable() {
             @Override
             public void run() {
-                int x = ANONYMOUS_CLASS_CONSTANT;
-                int y = CONSTANT_IN_INNER_CLASS;
-                int z = CONSTANT_IN_STATIC_INNER_CLASS;
+                int x = ANONYMOUS_CLASS_CONSTANT + 1;
+                int y = CONSTANT_IN_INNER_CLASS + 1;
+                int z = CONSTANT_IN_STATIC_INNER_CLASS + 1;
             }
         };
     }
 
     public class InnerClass {
         int foo() {
-            return INNER_CLASS_CONSTANT;
+            return INNER_CLASS_CONSTANT + 1;
         }
         int bar() {
-            return CONSTANT_IN_INNER_CLASS;
+            return CONSTANT_IN_INNER_CLASS + 1;
         }
         int foobar() {
-            return CONSTANT_IN_STATIC_INNER_CLASS;
+            return CONSTANT_IN_STATIC_INNER_CLASS + 1;
         }
     }
 
     public static class InnerStaticClass {
         int foo() {
-            return INNER_STATIC_CLASS_CONSTANT;
+            return INNER_STATIC_CLASS_CONSTANT + 1;
         }
         int bar() {
-            return CONSTANT_IN_INNER_CLASS;
+            return CONSTANT_IN_INNER_CLASS + 1;
         }
         int foobar() {
-            return CONSTANT_IN_STATIC_INNER_CLASS;
+            return CONSTANT_IN_STATIC_INNER_CLASS + 1;
         }
-    }
-
-    public class InnerConstantClass {
-        public static final int CONSTANT_IN_INNER_CLASS = 1;
-    }
-
-    public static class InnerStaticConstantClass {
-        public static final int CONSTANT_IN_STATIC_INNER_CLASS = 1;
     }
 
 }

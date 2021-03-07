@@ -20,54 +20,58 @@ import org.gradle.api.internal.cache.StringInterner;
 import org.gradle.internal.serialize.AbstractSerializer;
 import org.gradle.internal.serialize.Decoder;
 import org.gradle.internal.serialize.Encoder;
-import org.gradle.internal.serialize.Int2ObjectMapSerializer;
-import org.gradle.internal.serialize.InterningStringSerializer;
-import org.gradle.internal.serialize.SetSerializer;
 
 import java.util.Collections;
-import java.util.Map;
 import java.util.Set;
 
 public class CompilerApiData {
 
     private final boolean isAvailable;
-    private final Map<Integer, Set<String>> constantToClassMapping;
+    private final ConstantToClassMapping constantToClassMapping;
+    private final ConstantsToClassMappingCache constantToClassMappingCache;
 
     public CompilerApiData() {
-        this.constantToClassMapping = Collections.emptyMap();
-        this.isAvailable = false;
+        this(new ConstantToClassMapping(Collections.emptyList(), Collections.emptyMap()), false);
     }
 
-    public CompilerApiData(Map<Integer, Set<String>> classToConstantsMapping) {
-        this.isAvailable = true;
-        this.constantToClassMapping = classToConstantsMapping;
+    public CompilerApiData(ConstantToClassMapping constantToClassMapping) {
+        this(constantToClassMapping, true);
     }
 
-    public Map<Integer, Set<String>> getConstantToClassMapping() {
-        return constantToClassMapping;
+    private CompilerApiData(ConstantToClassMapping constantToClassMapping, boolean isAvailable) {
+        this.isAvailable = isAvailable;
+        this.constantToClassMapping = constantToClassMapping;
+        this.constantToClassMappingCache = new ConstantsToClassMappingCache(constantToClassMapping);
+    }
+
+    public Set<String> getDependentClassesForConstant(int constantHash) {
+        return constantToClassMappingCache.get(constantHash);
     }
 
     public boolean isAvailable() {
         return isAvailable;
     }
 
+    public ConstantToClassMapping getUncachedConstantToClassMapping() {
+        return constantToClassMapping;
+    }
+
     public static final class Serializer extends AbstractSerializer<CompilerApiData> {
-        private final Int2ObjectMapSerializer<Set<String>> mapSerializer;
+        private final ConstantToClassMapping.Serializer constantsToClassSerializer;
 
         public Serializer(StringInterner interner) {
-            InterningStringSerializer stringSerializer = new InterningStringSerializer(interner);
-            SetSerializer<String> stringSetSerializer = new SetSerializer<>(stringSerializer);
-            mapSerializer = new Int2ObjectMapSerializer<>(stringSetSerializer);
+            constantsToClassSerializer = new ConstantToClassMapping.Serializer(interner);
         }
 
         @Override
         public CompilerApiData read(Decoder decoder) throws Exception {
-            return new CompilerApiData(mapSerializer.read(decoder));
+            ConstantToClassMapping mapping = constantsToClassSerializer.read(decoder);
+            return new CompilerApiData(mapping);
         }
 
         @Override
         public void write(Encoder encoder, CompilerApiData value) throws Exception {
-            mapSerializer.write(encoder, value.getConstantToClassMapping());
+            constantsToClassSerializer.write(encoder, value.getUncachedConstantToClassMapping());
         }
     }
 

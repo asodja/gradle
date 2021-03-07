@@ -23,6 +23,7 @@ import com.google.common.io.Files;
 import com.google.common.io.LineProcessor;
 import org.gradle.api.UncheckedIOException;
 import org.gradle.api.file.FileCollection;
+import org.gradle.execution.SelectedTaskExecutionAction;
 import org.gradle.work.ChangeType;
 import org.gradle.work.FileChange;
 import org.gradle.work.InputChanges;
@@ -34,8 +35,11 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.StreamSupport;
 
 /**
@@ -103,20 +107,25 @@ public class SourceClassesMappingFileAccessor {
         writeSourceClassesMappingFile(mappingFile, mapping.asMap());
     }
 
-    public static void mergeIncrementalMappingsIntoOldMappings(File sourceClassesMappingFile,
-                                                               FileCollection stableSources,
-                                                               InputChanges inputChanges,
-                                                               Multimap<String, String> oldMappings) {
+    /**
+     * Merges mapping and returns all the removed classes
+     */
+    public static Set<String> mergeIncrementalMappingsIntoOldMappings(File sourceClassesMappingFile,
+                                                                                              FileCollection stableSources,
+                                                                                              InputChanges inputChanges,
+                                                                                              Multimap<String, String> oldMappings) {
         Multimap<String, String> mappingsDuringIncrementalCompilation = readSourceClassesMappingFile(sourceClassesMappingFile);
 
+        Set<String> removedClasses = new HashSet<>();
         StreamSupport.stream(inputChanges.getFileChanges(stableSources).spliterator(), false)
             .filter(fileChange -> fileChange.getChangeType() == ChangeType.REMOVED)
             .map(FileChange::getNormalizedPath)
-            .forEach(oldMappings::removeAll);
+            .forEach(fileName -> removedClasses.addAll(oldMappings.removeAll(fileName)));
         mappingsDuringIncrementalCompilation.keySet().forEach(oldMappings::removeAll);
 
         oldMappings.putAll(mappingsDuringIncrementalCompilation);
 
         writeSourceClassesMappingFile(sourceClassesMappingFile, oldMappings);
+        return removedClasses;
     }
 }

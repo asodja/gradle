@@ -18,10 +18,12 @@ package org.gradle.api.internal.tasks.compile;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Multimap;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.tasks.compile.CompileOptions;
 import org.gradle.api.tasks.compile.DebugOptions;
 import org.gradle.api.tasks.compile.ForkOptions;
+import org.gradle.work.InputChanges;
 
 import javax.annotation.Nullable;
 import java.io.File;
@@ -49,6 +51,9 @@ public class MinimalJavaCompileOptions implements Serializable {
     private boolean supportsCompilerApi;
     private File incrementalCompilationMappingFile;
     private File incrementalCompilationConstantsMapping;
+    private Multimap<String, String> classToFileMapping;
+    private InputChanges inputs;
+    private FileCollection stableSources;
 
     public MinimalJavaCompileOptions(final CompileOptions compileOptions) {
         FileCollection sourcepath = compileOptions.getSourcepath();
@@ -221,6 +226,15 @@ public class MinimalJavaCompileOptions implements Serializable {
         return incrementalCompilationMappingFile;
     }
 
+    public void setPreviousClassToFileMapping(@Nullable Multimap<String, String> classToFileMapping) {
+        this.classToFileMapping = classToFileMapping;
+    }
+
+    @Nullable
+    public Multimap<String, String> getPreviousClassesMapping() {
+        return this.classToFileMapping;
+    }
+
     public void setIncrementalCompilationClassesMappingFile(@Nullable File incrementalCompilationClassesMappingFile) {
         this.incrementalCompilationMappingFile = incrementalCompilationClassesMappingFile;
     }
@@ -242,4 +256,19 @@ public class MinimalJavaCompileOptions implements Serializable {
         this.supportsCompilerApi = supportsCompilerApi;
     }
 
+    public void setInputs(InputChanges inputs) {
+        this.inputs = inputs;
+    }
+
+    public InputChanges getInputs() {
+        return inputs;
+    }
+
+    public void setStableSources(FileCollection stableSources) {
+        this.stableSources = stableSources;
+    }
+
+    public FileCollection getStableSources() {
+        return stableSources;
+    }
 }

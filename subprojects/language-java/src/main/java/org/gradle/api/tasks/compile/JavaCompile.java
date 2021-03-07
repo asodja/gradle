@@ -30,15 +30,12 @@ import org.gradle.api.internal.tasks.compile.CommandLineJavaCompileSpec;
 import org.gradle.api.internal.tasks.compile.CompilationSourceDirs;
 import org.gradle.api.internal.tasks.compile.CompileJavaBuildOperationReportingCompiler;
 import org.gradle.api.internal.tasks.compile.CompilerForkUtils;
-import org.gradle.api.internal.tasks.compile.ConstantsMappingFileAccessor;
 import org.gradle.api.internal.tasks.compile.DefaultJavaCompileSpec;
 import org.gradle.api.internal.tasks.compile.DefaultJavaCompileSpecFactory;
 import org.gradle.api.internal.tasks.compile.HasCompileOptions;
 import org.gradle.api.internal.tasks.compile.JavaCompileSpec;
 import org.gradle.api.internal.tasks.compile.SourceClassesMappingFileAccessor;
 import org.gradle.api.internal.tasks.compile.incremental.IncrementalCompilerFactory;
-import org.gradle.api.internal.tasks.compile.incremental.recomp.ConstantsMappingProvider;
-import org.gradle.api.internal.tasks.compile.incremental.recomp.DefaultConstantsMappingProvider;
 import org.gradle.api.internal.tasks.compile.incremental.recomp.DefaultSourceFileClassNameConverter;
 import org.gradle.api.internal.tasks.compile.incremental.recomp.FileNameDerivingClassNameConverter;
 import org.gradle.api.internal.tasks.compile.incremental.recomp.IncrementalCompilationResult;
@@ -179,6 +176,9 @@ public class JavaCompile extends AbstractCompile implements HasCompileOptions {
             sourceFileClassNameConverter = new FileNameDerivingClassNameConverter();
         }
         sourceClassesMappingFile.delete();
+        spec.getCompileOptions().setInputs(inputs);
+        spec.getCompileOptions().setPreviousClassToFileMapping(classToFileMapping);
+        spec.getCompileOptions().setStableSources(getStableSources());
         spec.getCompileOptions().setIncrementalCompilationClassesMappingFile(sourceClassesMappingFile);
 
         // Setup constants mapping file
@@ -188,11 +188,6 @@ public class JavaCompile extends AbstractCompile implements HasCompileOptions {
         Compiler<JavaCompileSpec> compiler = createCompiler();
         compiler = makeIncremental(inputs, sourceFileClassNameConverter, (CleaningJavaCompiler<JavaCompileSpec>) compiler, getStableSources().getAsFileTree());
         WorkResult workResult = performCompilation(spec, compiler);
-        if (classToFileMapping != null && workResult instanceof IncrementalCompilationResult && spec.getCompileOptions().supportsCompilerApi()) {
-            // The compilation will generate the new mapping file
-            // Only merge old mappings into new mapping on incremental recompilation
-            mergeIncrementalMappingsIntoOldMappings(sourceClassesMappingFile, getStableSources(), inputs, classToFileMapping);
-        }
     }
 
     private Compiler<JavaCompileSpec> makeIncremental(InputChanges inputs, SourceFileClassNameConverter sourceFileClassNameConverter, CleaningJavaCompiler<JavaCompileSpec> compiler, FileTree sources) {
