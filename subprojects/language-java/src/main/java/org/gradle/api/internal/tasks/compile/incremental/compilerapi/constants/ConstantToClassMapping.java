@@ -28,7 +28,6 @@ import org.gradle.internal.serialize.IntSetSerializer;
 import org.gradle.internal.serialize.InterningStringSerializer;
 import org.gradle.internal.serialize.ListSerializer;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -61,9 +60,9 @@ public class ConstantToClassMapping {
         return constantToClassIndexes;
     }
 
-    public Set<String> getDependentClasses(int constantHash) {
-        if (constantToClassIndexes.containsKey(constantHash)) {
-            IntSet classIndexes = constantToClassIndexes.get(constantHash);
+    public Set<String> getDependentClasses(int constantOriginHash) {
+        if (constantToClassIndexes.containsKey(constantOriginHash)) {
+            IntSet classIndexes = constantToClassIndexes.get(constantOriginHash);
             Set<String> dependents = new ObjectOpenHashSet<>(classIndexes.size());
             classIndexes.forEach(index -> dependents.add(classNames.get(index)));
             return dependents;

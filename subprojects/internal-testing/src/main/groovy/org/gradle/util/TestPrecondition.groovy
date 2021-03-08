@@ -139,9 +139,6 @@ enum TestPrecondition implements org.gradle.internal.Factory<Boolean> {
     JDK({
         ToolProvider.systemJavaCompiler != null
     }),
-    JAVA_LANGUAGE({
-        language = CompiledLanguage.JAVA
-    }),
     ONLINE({
         try {
             new URL("http://google.com").openConnection().getInputStream().close()

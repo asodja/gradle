@@ -152,9 +152,10 @@ public class ClassDependenciesVisitor extends ClassVisitor {
         Set<String> types = isAccessible(access) ? accessibleTypes : privateTypes;
         maybeAddDependentType(types, descTypeOf(desc));
         if (isAccessibleConstant(access, value)) {
-            // This is currently not used anywhere, it's still here since
-            // there might be some additional constants analysis improvement
-            constants.add((name + '|' + value).hashCode());
+            // we need to compute a hash for a constant, which is based on the name of the constant + its value
+            // otherwise we miss the case where a class defines several constants with the same value, or when
+            // two values are switched
+            constants.add((name + '|' + value).hashCode()); //non-private const
         }
         return new FieldVisitor(types);
     }

@@ -38,7 +38,6 @@ import org.gradle.api.internal.tasks.compile.SourceClassesMappingFileAccessor;
 import org.gradle.api.internal.tasks.compile.incremental.IncrementalCompilerFactory;
 import org.gradle.api.internal.tasks.compile.incremental.recomp.DefaultSourceFileClassNameConverter;
 import org.gradle.api.internal.tasks.compile.incremental.recomp.FileNameDerivingClassNameConverter;
-import org.gradle.api.internal.tasks.compile.incremental.recomp.IncrementalCompilationResult;
 import org.gradle.api.internal.tasks.compile.incremental.recomp.JavaRecompilationSpecProvider;
 import org.gradle.api.internal.tasks.compile.incremental.recomp.SourceFileClassNameConverter;
 import org.gradle.api.jvm.ModularitySpec;
@@ -83,7 +82,6 @@ import java.util.List;
 import java.util.concurrent.Callable;
 
 import static com.google.common.base.Preconditions.checkState;
-import static org.gradle.api.internal.tasks.compile.SourceClassesMappingFileAccessor.mergeIncrementalMappingsIntoOldMappings;
 
 /**
  * Compiles Java source files.

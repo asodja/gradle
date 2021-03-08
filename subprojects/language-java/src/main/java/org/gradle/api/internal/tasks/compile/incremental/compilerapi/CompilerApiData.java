@@ -39,8 +39,8 @@ public class CompilerApiData {
         this.constantToClassMapping = constantToClassMapping;
     }
 
-    public Set<String> getDependentClassesForConstant(int constantHash) {
-        return constantToClassMapping.getDependentClasses(constantHash);
+    public Set<String> getDependentClassesForConstant(int constantOriginHash) {
+        return constantToClassMapping.getDependentClasses(constantOriginHash);
     }
 
     public ConstantToClassMapping getConstantToClassMapping() {

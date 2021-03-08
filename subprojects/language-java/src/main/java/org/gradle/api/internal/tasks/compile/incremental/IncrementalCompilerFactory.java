@@ -32,8 +32,6 @@ import org.gradle.api.internal.tasks.compile.incremental.classpath.ClasspathEntr
 import org.gradle.api.internal.tasks.compile.incremental.classpath.ClasspathEntrySnapshotter;
 import org.gradle.api.internal.tasks.compile.incremental.classpath.ClasspathSnapshotFactory;
 import org.gradle.api.internal.tasks.compile.incremental.classpath.ClasspathSnapshotMaker;
-import org.gradle.api.internal.tasks.compile.incremental.compilerapi.CompilerApiData;
-import org.gradle.api.internal.tasks.compile.incremental.recomp.ConstantsMappingProvider;
 import org.gradle.api.internal.tasks.compile.incremental.recomp.PreviousCompilationOutputAnalyzer;
 import org.gradle.api.internal.tasks.compile.incremental.recomp.PreviousCompilationStore;
 import org.gradle.api.internal.tasks.compile.incremental.recomp.RecompilationSpecProvider;

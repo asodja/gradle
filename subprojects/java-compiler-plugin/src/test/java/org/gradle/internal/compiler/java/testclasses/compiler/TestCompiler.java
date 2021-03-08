@@ -33,7 +33,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.Collections.singletonList;
 
 public class TestCompiler {
 
@@ -52,12 +51,12 @@ public class TestCompiler {
         this.constantsConsumer = constantsConsumer;
     }
 
-    public void compile(File sourceFile) {
+    public void compile(List<File> sourceFiles) {
         StringWriter output = new StringWriter();
         JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
         StandardJavaFileManager fileManager = compiler.getStandardFileManager(null, null, UTF_8);
-        Iterable<? extends JavaFileObject> compilationUnits = fileManager.getJavaFileObjectsFromFiles(singletonList(sourceFile));
-        List<String> arguments = Arrays.asList("-classpath", System.getProperty("java.class.path"), "-d", outputFolder.getAbsolutePath());
+        Iterable<? extends JavaFileObject> compilationUnits = fileManager.getJavaFileObjectsFromFiles(sourceFiles);
+        List<String> arguments = Arrays.asList("-d", outputFolder.getAbsolutePath());
         JavaCompiler.CompilationTask delegate = compiler.getTask(output, fileManager, null, arguments, null, compilationUnits);
         IncrementalCompileTask task = new IncrementalCompileTask(delegate, relativize, classNameConsumer, constantsConsumer);
         if (!task.call()) {

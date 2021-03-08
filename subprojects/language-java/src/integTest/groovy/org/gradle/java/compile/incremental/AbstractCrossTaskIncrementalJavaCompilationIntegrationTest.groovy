@@ -65,31 +65,31 @@ abstract class AbstractCrossTaskIncrementalJavaCompilationIntegrationTest extend
         impl.recompiledClasses('X')
 
         when:
+        impl.snapshot { run "impl:${language.compileTaskName}" }
         // B is changed so we expect Y to recompile
-        long lastClassChangeTime = System.currentTimeMillis()
         source api: ["class B { final static int y = 2; /* change */ void blah() { /* avoid flakiness by changing compiled file length*/ } }"]
         run "impl:${language.compileTaskName}"
 
         then:
-        impl.recompiledClassesSince(lastClassChangeTime, 'Y')
+        impl.recompiledClasses('Y')
 
         when:
+        impl.snapshot { run "impl:${language.compileTaskName}" }
         // A and B are changed so we expect X, Y to recompile
-        lastClassChangeTime = System.currentTimeMillis()
         source api: ["class A { final static int x = 3; }",
                      "class B { final static int y = 3; }"]
         run "impl:${language.compileTaskName}"
 
         then:
-        impl.recompiledClassesSince(lastClassChangeTime, 'X', 'Y')
+        impl.recompiledClasses( 'X', 'Y')
 
         when:
+        impl.snapshot { run "impl:${language.compileTaskName}" }
         // No change, so we expect no recompilation
-        lastClassChangeTime = System.currentTimeMillis()
         run "impl:${language.compileTaskName}"
 
         then:
-        impl.noneRecompiledSince(lastClassChangeTime)
+        impl.noneRecompiled()
     }
 
     @Unroll
@@ -160,22 +160,22 @@ abstract class AbstractCrossTaskIncrementalJavaCompilationIntegrationTest extend
         impl.noneRecompiled()
 
         when:
+        impl.snapshot { run "impl:${language.compileTaskName}" }
         // Constant change
-        long lastClassChangeTime = System.currentTimeMillis()
         source api: ["class B { final static int x = 2; int method() { return 2; } }"]
         run "impl:${language.compileTaskName}"
 
         then:
-        impl.recompiledClassesSince(lastClassChangeTime, 'X')
+        impl.recompiledClasses('X')
 
         when:
         // non-abi change
-        lastClassChangeTime = System.currentTimeMillis()
+        impl.snapshot { run "impl:${language.compileTaskName}" }
         source api: ["class B { final static int x = 2; int method() { return 3; } }"]
         run "impl:${language.compileTaskName}"
 
         then:
-        impl.noneRecompiledSince(lastClassChangeTime)
+        impl.noneRecompiled()
     }
 
     def "changing upstream constant causes compilation for downstream constants"() {
@@ -463,6 +463,18 @@ abstract class AbstractCrossTaskIncrementalJavaCompilationIntegrationTest extend
 
         then:
         impl.recompiledClasses 'B'
+    }
+
+    def "does recompile on constant change inside one project"() {
+        source impl: ["class A { static final int x = 1; }", "class B { private void method() { int x = A.x; } }", "class C { }"]
+        impl.snapshot { run language.compileTaskName }
+
+        when:
+        source impl: ["class A { static final int x = 2; /* change */ void bla() { /* avoid flakiness */ } }"]
+        run "impl:${language.compileTaskName}"
+
+        then:
+        impl.recompiledClasses 'A', 'B'
     }
 
 }

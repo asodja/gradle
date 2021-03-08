@@ -21,7 +21,6 @@ import org.gradle.api.internal.tasks.compile.CleaningJavaCompiler;
 import org.gradle.api.internal.tasks.compile.JavaCompileSpec;
 import org.gradle.api.internal.tasks.compile.incremental.cache.TaskScopedCompileCaches;
 import org.gradle.api.internal.tasks.compile.incremental.classpath.ClasspathSnapshotMaker;
-import org.gradle.api.internal.tasks.compile.incremental.recomp.ConstantsMappingProvider;
 import org.gradle.api.internal.tasks.compile.incremental.recomp.PreviousCompilation;
 import org.gradle.api.internal.tasks.compile.incremental.recomp.PreviousCompilationData;
 import org.gradle.api.internal.tasks.compile.incremental.recomp.PreviousCompilationOutputAnalyzer;

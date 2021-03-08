@@ -52,7 +52,7 @@ public class ConstantsMappingFileAccessor {
                         sourceClassesMapping.get(currentFile).add(line.substring(1));
                     } else {
                         currentFile = line;
-                        sourceClassesMapping.computeIfAbsent(line, (k) -> new ArrayList<>());
+                        sourceClassesMapping.computeIfAbsent(line, k -> new ArrayList<>());
                     }
 
                     return true;

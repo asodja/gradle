@@ -69,7 +69,7 @@ public class ConstantToClassMappingMerger {
         constantToClassMapping.getConstantToClassIndexes().forEach((constantOrigins, classes) -> {
             for (int i : classes) {
                 String className = classNames.get(i);
-                classToConstants.computeIfAbsent(className, (k) -> new IntOpenHashSet()).add((int) constantOrigins);
+                classToConstants.computeIfAbsent(className, k -> new IntOpenHashSet()).add((int) constantOrigins);
             }
         });
         return classToConstants;
@@ -95,7 +95,7 @@ public class ConstantToClassMappingMerger {
         classesToConstants.forEach((clazz, constantOrigins) -> {
             newClassNames.add(clazz);
             for (int constantOriginHash : constantOrigins) {
-                constantToClassIndexes.computeIfAbsent(constantOriginHash, (k) -> new IntOpenHashSet()).add(currentIndex.get());
+                constantToClassIndexes.computeIfAbsent(constantOriginHash, k -> new IntOpenHashSet()).add(currentIndex.get());
             }
             currentIndex.incrementAndGet();
         });
