@@ -141,7 +141,7 @@ class JavaCompileIntegrationTest extends AbstractPluginIntegrationTest {
         """
     }
 
-    @Requires(TestPrecondition.NOT_WINDOWS)
+    @Requires([TestPrecondition.NOT_WINDOWS, TestPrecondition.NOT_MAC_OS_X])
     def "can compile after package case-rename"() {
         buildFile << """
             plugins {
