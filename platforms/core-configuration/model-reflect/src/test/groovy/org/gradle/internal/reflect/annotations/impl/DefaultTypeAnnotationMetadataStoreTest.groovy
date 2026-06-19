@@ -19,7 +19,10 @@ package org.gradle.internal.reflect.annotations.impl
 import groovy.transform.Generated
 import groovy.transform.Memoized
 import groovy.transform.PackageScope
+import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.FileCollection
+import org.gradle.api.tasks.Classpath
+import org.gradle.api.tasks.CompileClasspath
 import org.gradle.cache.internal.TestCrossBuildInMemoryCacheFactory
 import org.gradle.internal.reflect.DefaultTypeValidationContext
 import org.gradle.internal.reflect.annotations.AnnotationCategory
@@ -688,6 +691,73 @@ class DefaultTypeAnnotationMetadataStoreTest extends Specification implements Va
         @Override
         @Bar
         String overriddenMethod()
+    }
+
+    private static final NORMALIZATION = new AnnotationCategory() {
+        @Override
+        String getDisplayName() { "normalization" }
+        @Override
+        String toString() { displayName }
+    }
+
+    def "subclass getter that re-annotates an upgraded property accessor with @CompileClasspath wins over the inherited @Classpath (#scenario)"() {
+        given:
+        // @Classpath and @CompileClasspath are both in the production NORMALIZATION category
+        // (ModifierAnnotationCategory.NORMALIZATION); model that here so the resolution matches production.
+        def normalizationStore = new DefaultTypeAnnotationMetadataStore(
+            [],
+            [(Classpath): NORMALIZATION, (CompileClasspath): NORMALIZATION],
+            [:],
+            ["java", "groovy"],
+            [Object],
+            [Object, GroovyObject],
+            [],
+            [],
+            [],
+            { Method method -> method.isAnnotationPresent(Generated) },
+            new TestCrossBuildInMemoryCacheFactory())
+
+        when:
+        def metadata = normalizationStore.getTypeAnnotationMetadata(type)
+        def property = metadata.propertiesAnnotationMetadata.find { it.propertyName == "checkstyleClasspath" }
+
+        then:
+        property != null
+        property.annotationsByCategory[NORMALIZATION].annotationType() == expectedAnnotation
+
+        where:
+        scenario                                  | type                                | expectedAnnotation
+        "base upgraded type (Checkstyle-like)"    | UpgradedClasspathProperty           | Classpath
+        "pre-upgrade override re-annotated"       | OverrideReannotatedCompileClasspath | CompileClasspath
+        "decorated subclass inherits the override"| DecoratedOverReannotatedOverride    | CompileClasspath
+    }
+
+    // Mimics Checkstyle: an upgraded, abstract Provider-style file collection accessor annotated @Classpath.
+    @SuppressWarnings("unused")
+    abstract static class UpgradedClasspathProperty {
+        @Classpath
+        abstract ConfigurableFileCollection getCheckstyleClasspath()
+    }
+
+    // Mimics a plugin that overrode the accessor and re-annotated it with @CompileClasspath.
+    // The real pre-upgrade override has the legacy FileCollection return type (a *widening* override of the
+    // upgraded ConfigurableFileCollection getter), which produces a two-getter shape at the bytecode level.
+    // That shape cannot be written in Java/Groovy source (return-type covariance is enforced), but annotation
+    // resolution is keyed by getter name and ignores the return type, so a same-return override exercises the
+    // identical resolution path: a declared annotation on the subclass overrides the inherited one in its category.
+    @SuppressWarnings("unused")
+    abstract static class OverrideReannotatedCompileClasspath extends UpgradedClasspathProperty {
+        @Override
+        @CompileClasspath
+        ConfigurableFileCollection getCheckstyleClasspath() { null }
+    }
+
+    // Mimics the generated decorated subclass that implements the managed (upgraded) getter without re-annotating;
+    // it must inherit the override's @CompileClasspath, not the original @Classpath.
+    @SuppressWarnings("unused")
+    abstract static class DecoratedOverReannotatedOverride extends OverrideReannotatedCompileClasspath {
+        @Override
+        ConfigurableFileCollection getCheckstyleClasspath() { null }
     }
 
     def "can ignore supertype property"() {
