@@ -18,7 +18,7 @@ package org.gradle.api.internal.provider
 
 import org.gradle.api.InvalidUserCodeException
 import org.gradle.api.Task
-import org.gradle.api.internal.provider.CircularEvaluationSpec.CircularChainEvaluationSpec
+import org.gradle.api.internal.provider.CircularEvaluationSpec.StructuralProviderSelfReferenceSpec
 import org.gradle.api.internal.provider.CircularEvaluationSpec.CircularFunctionEvaluationSpec
 import org.gradle.api.internal.provider.CircularEvaluationSpec.UsesStringProperty
 import org.gradle.api.provider.Property
@@ -178,7 +178,7 @@ class FilteringProviderTest extends Specification {
         }
     }
 
-    static class FilteringProviderCircularChainEvaluationTest extends CircularChainEvaluationSpec<String> implements UsesStringProperty {
+    static class FilteringProviderCircularChainEvaluationTest extends StructuralProviderSelfReferenceSpec<String> implements UsesStringProperty {
         @Override
         ProviderInternal<String> wrapProviderWithProviderUnderTest(ProviderInternal<String> baseProvider) {
             return new FilteringProvider<String>(baseProvider, { it == ""})
