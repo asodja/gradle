@@ -29,6 +29,7 @@ final class ProviderSubstitution {
     private final Supplier<? extends ProviderInternal<?>> replacementFactory;
     private final IdentityHashMap<ProviderInternal<?>, ProviderInternal<?>> substitutions = new IdentityHashMap<>();
     private ProviderInternal<?> replacement;
+    private boolean targetFound;
 
     ProviderSubstitution(ProviderInternal<?> target, Supplier<? extends ProviderInternal<?>> replacementFactory) {
         this.target = target;
@@ -41,6 +42,7 @@ final class ProviderSubstitution {
      */
     <T> ProviderInternal<T> substitute(ProviderInternal<T> provider) {
         if (provider == target) {
+            targetFound = true;
             return Cast.uncheckedCast(replacement());
         }
 
@@ -56,6 +58,10 @@ final class ProviderSubstitution {
         ProviderInternal<T> result = Cast.<StructuralProvider<T>>uncheckedCast(provider).substitute(this);
         substitutions.put(provider, result);
         return result;
+    }
+
+    boolean isTargetFound() {
+        return targetFound;
     }
 
     private ProviderInternal<?> replacement() {

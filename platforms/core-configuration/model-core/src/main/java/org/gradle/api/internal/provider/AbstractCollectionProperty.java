@@ -281,8 +281,12 @@ public abstract class AbstractCollectionProperty<T, C extends Collection<T>> ext
                 throw new IllegalArgumentException(String.format("Cannot set the value of a property of type %s with element type %s using a provider with element type %s.", getCollectionType().getName(), elementType.getName(), collectionProp.getElementType().getName()));
             }
         }
-        p = Cast.uncheckedCast(substituteSelfReference(p));
-        setSupplier(newSupplierOf(new ElementsFromCollectionProvider<>(p)));
+        setProviderValue(Cast.uncheckedCast(p));
+    }
+
+    @Override
+    protected CollectionSupplier<T, C> supplierFromProvider(ProviderInternal<? extends C> provider) {
+        return newSupplierOf(new ElementsFromCollectionProvider<>(provider));
     }
 
     private void unsetValueAndDefault() {
