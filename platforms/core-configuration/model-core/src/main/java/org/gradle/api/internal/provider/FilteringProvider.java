@@ -25,7 +25,7 @@ import org.jspecify.annotations.Nullable;
 /**
  * A filtering provider that uses a spec to filter the value of another provider.
  **/
-public class FilteringProvider<T> extends AbstractMinimalProvider<T> {
+public class FilteringProvider<T> extends AbstractMinimalProvider<T> implements StructuralProvider<T> {
 
     protected final ProviderInternal<T> provider;
     protected final Spec<? super T> spec;
@@ -98,6 +98,15 @@ public class FilteringProvider<T> extends AbstractMinimalProvider<T> {
                 );
             }
         });
+    }
+
+    @Override
+    public ProviderInternal<T> substitute(ProviderSubstitution substitution) {
+        ProviderInternal<T> substituted = substitution.substitute(provider);
+        if (substituted == provider) {
+            return this;
+        }
+        return new FilteringProvider<>(substituted, spec);
     }
 
     @Override
