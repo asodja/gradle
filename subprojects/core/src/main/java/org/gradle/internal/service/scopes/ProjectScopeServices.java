@@ -79,6 +79,7 @@ import org.gradle.execution.taskgraph.TaskExecutionGraphInternal;
 import org.gradle.initialization.layout.BuildLayout;
 import org.gradle.internal.Describables;
 import org.gradle.internal.build.BuildState;
+import org.gradle.internal.buildoption.InternalOptions;
 import org.gradle.internal.code.UserCodeApplicationContext;
 import org.gradle.internal.file.PathToFileResolver;
 import org.gradle.internal.instantiation.InstantiatorFactory;
@@ -321,8 +322,8 @@ public class ProjectScopeServices implements ServiceRegistrationProvider {
     }
 
     @Provides
-    protected PropertyHost createPropertyHost() {
-        return new ProjectBackedPropertyHost(project);
+    protected PropertyHost createPropertyHost(UserCodeApplicationContext userCodeApplicationContext, InternalOptions internalOptions) {
+        return new ProjectBackedPropertyHost(project, userCodeApplicationContext, internalOptions);
     }
 
     @Provides

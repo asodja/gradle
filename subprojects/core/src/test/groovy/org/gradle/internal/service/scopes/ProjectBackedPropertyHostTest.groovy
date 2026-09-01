@@ -19,8 +19,13 @@ package org.gradle.internal.service.scopes
 import org.gradle.api.internal.TaskInternal
 import org.gradle.api.internal.project.ProjectInternal
 import org.gradle.api.internal.project.ProjectStateInternal
+import org.gradle.api.internal.provider.CollaborativePropertyMutation
 import org.gradle.api.internal.tasks.TaskExecutionOutcome
 import org.gradle.api.internal.tasks.TaskStateInternal
+import org.gradle.internal.Describables
+import org.gradle.internal.buildoption.DefaultInternalOptions
+import org.gradle.internal.code.UserCodeApplicationContext
+import org.gradle.internal.code.UserCodeSource
 import org.gradle.internal.state.ModelObject
 import spock.lang.Specification
 
@@ -77,5 +82,57 @@ class ProjectBackedPropertyHostTest extends Specification {
 
         then:
         host.beforeRead(producer) == null
+    }
+
+    def "automatic collaborative attribution is disabled by default"() {
+        def application = Stub(UserCodeApplicationContext.Application)
+        def userCodeContext = Stub(UserCodeApplicationContext) {
+            current() >> application
+        }
+        def host = new ProjectBackedPropertyHost(project, userCodeContext, new DefaultInternalOptions([:]))
+
+        expect:
+        host.currentCollaborativeMutation() == null
+    }
+
+    def "attributes collaborative mutation to current binary plugin"() {
+        def source = new UserCodeSource.Binary(Describables.of("plugin 'com.example.plugin'"), "com.example.Plugin", "com.example.plugin")
+        def mutation = currentMutation(source)
+
+        expect:
+        !mutation.source
+        mutation.contributor == "com.example.plugin"
+        mutation.origin == "plugin 'com.example.plugin'"
+    }
+
+    def "attributes collaborative mutation to binary plugin class when it has no id"() {
+        def source = new UserCodeSource.Binary(Describables.of("plugin class 'com.example.Plugin'"), "com.example.Plugin", null)
+        def mutation = currentMutation(source)
+
+        expect:
+        !mutation.source
+        mutation.contributor == "com.example.Plugin"
+        mutation.origin == "plugin class 'com.example.Plugin'"
+    }
+
+    def "attributes collaborative mutation from a script as a source binding"() {
+        def source = new UserCodeSource.Script(Describables.of("build file 'build.gradle'"), null)
+        def mutation = currentMutation(source)
+
+        expect:
+        mutation.source
+        mutation.contributor == null
+        mutation.origin == "build file 'build.gradle'"
+    }
+
+    private CollaborativePropertyMutation currentMutation(UserCodeSource source) {
+        def application = Stub(UserCodeApplicationContext.Application) {
+            getSource() >> source
+        }
+        def userCodeContext = Stub(UserCodeApplicationContext) {
+            current() >> application
+        }
+        def options = new DefaultInternalOptions([(ProjectBackedPropertyHost.COLLABORATIVE_PROPERTY_UPDATES_PROPERTY): "true"])
+        return new ProjectBackedPropertyHost(project, userCodeContext, options).currentCollaborativeMutation()
     }
 }

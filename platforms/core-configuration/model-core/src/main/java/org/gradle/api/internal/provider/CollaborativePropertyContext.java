@@ -26,7 +26,7 @@ import org.jspecify.annotations.Nullable;
  * properties do not make any concurrency guarantees.</p>
  */
 public final class CollaborativePropertyContext {
-    private static final ThreadLocal<Mutation> CURRENT = new ThreadLocal<>();
+    private static final ThreadLocal<CollaborativePropertyMutation> CURRENT = new ThreadLocal<>();
 
     private CollaborativePropertyContext() {
     }
@@ -35,7 +35,7 @@ public final class CollaborativePropertyContext {
      * Enters the context used for a declarative source binding.
      */
     public static Scope source() {
-        return enter(Mutation.source());
+        return enter(CollaborativePropertyMutation.source(null));
     }
 
     /**
@@ -49,10 +49,7 @@ public final class CollaborativePropertyContext {
      * Enters the context used for an attributed contributor action with a diagnostic origin.
      */
     public static Scope contributor(String contributor, @Nullable String origin) {
-        if (contributor == null || contributor.isEmpty()) {
-            throw new IllegalArgumentException("A collaborative property contributor must have a non-empty name.");
-        }
-        return enter(Mutation.contributor(contributor, origin));
+        return enter(CollaborativePropertyMutation.contributor(contributor, origin));
     }
 
     public static void withSource(Runnable action) {
@@ -74,12 +71,12 @@ public final class CollaborativePropertyContext {
     }
 
     @Nullable
-    static Mutation currentMutation() {
+    static CollaborativePropertyMutation currentMutation() {
         return CURRENT.get();
     }
 
-    private static Scope enter(Mutation mutation) {
-        Mutation previous = CURRENT.get();
+    private static Scope enter(CollaborativePropertyMutation mutation) {
+        CollaborativePropertyMutation previous = CURRENT.get();
         CURRENT.set(mutation);
         return () -> {
             if (previous == null) {
@@ -95,39 +92,4 @@ public final class CollaborativePropertyContext {
         void close();
     }
 
-    static final class Mutation {
-        private final boolean source;
-        @Nullable
-        private final String contributor;
-        @Nullable
-        private final String origin;
-
-        private Mutation(boolean source, @Nullable String contributor, @Nullable String origin) {
-            this.source = source;
-            this.contributor = contributor;
-            this.origin = origin;
-        }
-
-        static Mutation source() {
-            return new Mutation(true, null, null);
-        }
-
-        static Mutation contributor(String contributor, @Nullable String origin) {
-            return new Mutation(false, contributor, origin);
-        }
-
-        boolean isSource() {
-            return source;
-        }
-
-        @Nullable
-        String getContributor() {
-            return contributor;
-        }
-
-        @Nullable
-        String getOrigin() {
-            return origin;
-        }
-    }
 }

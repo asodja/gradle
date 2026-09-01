@@ -56,11 +56,13 @@ public abstract class AbstractProperty<T, S extends ValueSupplier> extends Abstr
 
     private ModelObject producer;
     private DisplayName displayName;
+    private final PropertyHost host;
     private ValueState<S> state;
     private S value;
     private CollaborativeState collaborativeState;
 
     public AbstractProperty(PropertyHost host) {
+        this.host = host;
         state = ValueState.newState(host);
     }
 
@@ -340,7 +342,7 @@ public abstract class AbstractProperty<T, S extends ValueSupplier> extends Abstr
             return;
         }
 
-        CollaborativePropertyContext.Mutation mutation = requireCollaborativeMutation();
+        CollaborativePropertyMutation mutation = requireCollaborativeMutation();
         if (mutation.isSource()) {
             setSupplier(supplierFromProvider(provider));
             return;
@@ -487,8 +489,11 @@ public abstract class AbstractProperty<T, S extends ValueSupplier> extends Abstr
         return collaborativeState;
     }
 
-    private CollaborativePropertyContext.Mutation requireCollaborativeMutation() {
-        CollaborativePropertyContext.Mutation mutation = CollaborativePropertyContext.currentMutation();
+    private CollaborativePropertyMutation requireCollaborativeMutation() {
+        CollaborativePropertyMutation mutation = CollaborativePropertyContext.currentMutation();
+        if (mutation == null) {
+            mutation = host.currentCollaborativeMutation();
+        }
         if (mutation == null) {
             throw new IllegalStateException("Cannot mutate collaborative property '" + getDisplayName().getDisplayName()
                 + "': no declarative source or contributor context is active.");
@@ -500,7 +505,7 @@ public abstract class AbstractProperty<T, S extends ValueSupplier> extends Abstr
         if (collaborativeState == null) {
             return;
         }
-        CollaborativePropertyContext.Mutation mutation = requireCollaborativeMutation();
+        CollaborativePropertyMutation mutation = requireCollaborativeMutation();
         if (!mutation.isSource()) {
             throw new IllegalStateException("Cannot replace collaborative property '" + getDisplayName().getDisplayName()
                 + "' from contributor '" + mutation.getContributor() + "'; contributors may only apply structural self-updates.");
@@ -511,7 +516,7 @@ public abstract class AbstractProperty<T, S extends ValueSupplier> extends Abstr
         if (collaborativeState == null) {
             return;
         }
-        CollaborativePropertyContext.Mutation mutation = requireCollaborativeMutation();
+        CollaborativePropertyMutation mutation = requireCollaborativeMutation();
         if (mutation.isSource() || !collaborativeState.owner.equals(mutation.getContributor())) {
             String actor = mutation.isSource() ? "the declarative source" : "contributor '" + mutation.getContributor() + "'";
             throw new IllegalStateException("Cannot set the convention of collaborative property '" + getDisplayName().getDisplayName()
@@ -743,7 +748,7 @@ public abstract class AbstractProperty<T, S extends ValueSupplier> extends Abstr
             }
         }
 
-        private void acceptUpdate(CollaborativePropertyContext.Mutation mutation, ProviderInternal<? extends T> provider) {
+        private void acceptUpdate(CollaborativePropertyMutation mutation, ProviderInternal<? extends T> provider) {
             String contributor = mutation.getContributor();
             requireKnownContributor(contributor);
 

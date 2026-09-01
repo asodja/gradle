@@ -26,6 +26,14 @@ public interface PropertyHost {
     PropertyHost NO_OP = producer -> null;
 
     /**
+     * Returns the user-code attribution for the current mutation, when automatic attribution is enabled.
+     */
+    @Nullable
+    default CollaborativePropertyMutation currentCollaborativeMutation() {
+        return null;
+    }
+
+    /**
      * Returns null if the host allows reads of its state, or a string that explains why reads are not allowed.
      */
     @Nullable

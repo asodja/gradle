@@ -1120,6 +1120,41 @@ assert custom.prop.get() == "value 4"
         outputContains("prop = newValue")
     }
 
+    def "automatic collaborative plugin attribution is restored for lazy task configuration callbacks"() {
+        given:
+        collaborativePluginBuild('List.of("com.example.base", "com.example.feature")')
+
+        when:
+        run "help"
+
+        then:
+        outputDoesNotContain("base callback")
+        outputDoesNotContain("feature callback")
+
+        when:
+        run "show"
+
+        then:
+        outputContains("base callback")
+        outputContains("feature callback")
+        outputContains("collaborative = source:base:feature")
+    }
+
+    def "automatic collaborative plugin attribution reports plugin provenance for lazy callbacks in the wrong order"() {
+        given:
+        collaborativePluginBuild('List.of("com.example.feature", "com.example.base")')
+
+        when:
+        fails "show"
+
+        then:
+        failureCauseContains("contributor updates are out of order")
+        failureCauseContains("com.example.feature < com.example.base")
+        failureCauseContains("com.example.base -> com.example.feature")
+        failureCauseContains("com.example.base: Map at plugin 'com.example.base'")
+        failureCauseContains("com.example.feature: Map at plugin 'com.example.feature'")
+    }
+
     def "property follows Groovy truth when used as a boolean (#description)"() {
         given:
         buildFile """
@@ -1204,5 +1239,80 @@ assert custom.prop.get() == "value 4"
         times.times {
             executer.expectDeprecationWarning(ExpectedDeprecationWarning.withMessage(message))
         }
+    }
+
+    private void collaborativePluginBuild(String contributorOrder) {
+        file("gradle.properties") << "org.gradle.internal.provider.collaborative-property-updates=true\n"
+        file("buildSrc/build.gradle") << """
+            plugins {
+                id 'java-gradle-plugin'
+            }
+
+            gradlePlugin {
+                plugins {
+                    collaborativeBase {
+                        id = 'com.example.base'
+                        implementationClass = 'com.example.BasePlugin'
+                    }
+                    collaborativeFeature {
+                        id = 'com.example.feature'
+                        implementationClass = 'com.example.FeaturePlugin'
+                    }
+                }
+            }
+        """
+        file("buildSrc/src/main/java/com/example/BasePlugin.java") << """
+            package com.example;
+
+            import org.gradle.api.Plugin;
+            import org.gradle.api.Project;
+            import org.gradle.api.internal.provider.CollaborativePropertyInternal;
+            import org.gradle.api.provider.Property;
+
+            import java.util.List;
+
+            public class BasePlugin implements Plugin<Project> {
+                @Override
+                public void apply(Project project) {
+                    Property<String> property = project.getObjects().property(String.class);
+                    ((CollaborativePropertyInternal) property).enableCollaboration("com.example.base", $contributorOrder);
+                    project.getExtensions().add("collaborative", property);
+                    property.convention("default");
+
+                    project.getTasks().register("show", task -> {
+                        System.out.println("base callback");
+                        property.set(property.map(value -> value + ":base"));
+                        task.doLast(ignored -> System.out.println("collaborative = " + property.get()));
+                    });
+                }
+            }
+        """
+        file("buildSrc/src/main/java/com/example/FeaturePlugin.java") << """
+            package com.example;
+
+            import org.gradle.api.Plugin;
+            import org.gradle.api.Project;
+            import org.gradle.api.provider.Property;
+
+            public class FeaturePlugin implements Plugin<Project> {
+                @Override
+                @SuppressWarnings("unchecked")
+                public void apply(Project project) {
+                    Property<String> property = (Property<String>) project.getExtensions().getByName("collaborative");
+                    project.getTasks().named("show").configure(task -> {
+                        System.out.println("feature callback");
+                        property.set(property.map(value -> value + ":feature"));
+                    });
+                }
+            }
+        """
+        buildFile << """
+            plugins {
+                id 'com.example.base'
+                id 'com.example.feature'
+            }
+
+            collaborative.set("source")
+        """
     }
 }
