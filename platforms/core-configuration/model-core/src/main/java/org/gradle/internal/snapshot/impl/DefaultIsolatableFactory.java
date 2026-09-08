@@ -19,6 +19,7 @@ package org.gradle.internal.snapshot.impl;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.gradle.api.attributes.Attribute;
+import org.gradle.api.internal.provider.PropertyProvenanceTransport;
 import org.gradle.internal.hash.ClassLoaderHierarchyHasher;
 import org.gradle.internal.hash.HashCode;
 import org.gradle.internal.isolation.Isolatable;
@@ -50,6 +51,16 @@ public class DefaultIsolatableFactory extends AbstractValueProcessor implements 
         } catch (Throwable t) {
             throw new IsolationException(value, t);
         }
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    protected <T> T processManaged(Managed managed, ValueVisitor<T> visitor) {
+        // Unpacking or isolating the supplier can evaluate user code and mutate its owner.
+        // Capture diagnostics for the value being isolated, before either operation runs.
+        byte[] provenance = PropertyProvenanceTransport.encodeCheckpoint(managed);
+        T isolated = super.processManaged(managed, visitor);
+        return provenance == null ? isolated : (T) ((IsolatedManagedValue) isolated).withProvenance(provenance);
     }
 
     private static class IsolatableVisitor implements ValueVisitor<Isolatable<?>> {

@@ -19,6 +19,8 @@
 For the subsequent consolidation within the diagnostic collection adapters, see
 [the collection diagnostic adapters checkpoint](PROPERTY_PROVENANCE_COLLECTION_HOOKS.md).
 
+The subsequent transport implementation is documented in [D3](PROPERTY_PROVENANCE_D3.md).
+
 ## Roadmap and semantics reconciliation
 
 This checkpoint implements **D2 collection provenance**, following roadmap commit

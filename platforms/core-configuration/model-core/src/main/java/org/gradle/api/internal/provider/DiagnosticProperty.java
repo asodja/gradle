@@ -33,6 +33,7 @@ public final class DiagnosticProperty<T> extends AttributedProperty<T> {
     }
 
     /** Internal explicit explanation seam; callers choose whether to print the returned report. */
+    @Override
     public String getConfigurationTrace() {
         return ProvenanceRenderer.configuration(getEffectiveProvenance());
     }

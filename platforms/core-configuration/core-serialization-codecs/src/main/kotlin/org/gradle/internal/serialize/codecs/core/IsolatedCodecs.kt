@@ -180,13 +180,15 @@ class IsolatedManagedValueCodec(private val managedFactory: ManagedFactoryRegist
         writeClass(value.targetType)
         writeSmallInt(value.factoryId)
         write(value.state)
+        write(value.provenance)
     }
 
     override suspend fun ReadContext.decode(): IsolatedManagedValue {
         val targetType = readClass()
         val factoryId = readSmallInt()
         val state = readNonNull<Isolatable<Any>>()
-        return IsolatedManagedValue(targetType, managedFactory.lookup(factoryId), state)
+        val provenance = read() as ByteArray?
+        return IsolatedManagedValue(targetType, managedFactory.lookup(factoryId), state, provenance)
     }
 }
 

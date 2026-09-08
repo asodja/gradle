@@ -31,6 +31,7 @@ import org.gradle.api.internal.provider.DefaultMapProperty
 import org.gradle.api.internal.provider.DefaultProperty
 import org.gradle.api.internal.provider.DefaultSetProperty
 import org.gradle.api.internal.provider.DefaultValueSourceProviderFactory.ValueSourceProvider
+import org.gradle.api.internal.provider.PropertyProvenanceTransport
 import org.gradle.api.internal.provider.PropertyFactory
 import org.gradle.api.internal.provider.ProviderInternal
 import org.gradle.api.internal.provider.ValueSourceProviderFactory
@@ -223,11 +224,14 @@ class ProviderCodec(
 
     override suspend fun WriteContext.encode(value: ProviderInternal<*>) {
         // TODO - should write the provider value type
+        write(PropertyProvenanceTransport.encodeCheckpoint(value))
         providerCodec.run { encodeProvider(value) }
     }
 
-    override suspend fun ReadContext.decode() =
-        providerCodec.run { decodeProvider() }
+    override suspend fun ReadContext.decode(): ProviderInternal<*> {
+        val provenance = read() as ByteArray?
+        return PropertyProvenanceTransport.provider(providerCodec.run { decodeProvider() }, provenance)
+    }
 }
 
 
@@ -406,6 +410,7 @@ class PropertyCodec(
     override suspend fun WriteContext.encodeThis(value: DefaultProperty<*>) {
         encodePreservingIdentityOf(value) {
             writeClass(value.type)
+            write(PropertyProvenanceTransport.encodeCheckpoint(value))
             providerCodec.run { encodeProvider(value.provider) }
         }
     }
@@ -413,11 +418,14 @@ class PropertyCodec(
     override suspend fun ReadContext.decodeThis(): DefaultProperty<*> {
         return decodePreservingIdentity { id ->
             val type: Class<Any> = readClass().uncheckedCast()
-            val property = propertyFactory.property(type)
+            val provenance = read() as ByteArray?
+            val property = PropertyProvenanceTransport.factory(propertyFactory, provenance).property(type)
             isolate.identities.putInstance(id, property)
 
             val provider = providerCodec.run { decodeProvider() }
-            property.provider(provider)
+            PropertyProvenanceTransport.restore(property, provenance) {
+                property.provider(provider)
+            }
             property
         }
     }
@@ -492,6 +500,7 @@ class ListPropertyCodec(
     override suspend fun WriteContext.encodeThis(value: DefaultListProperty<*>) {
         encodePreservingIdentityOf(value) {
             writeClass(value.elementType)
+            write(PropertyProvenanceTransport.encodeCheckpoint(value))
             providerCodec.run { encodeValue(value.calculateExecutionTimeValue()) }
         }
     }
@@ -499,12 +508,14 @@ class ListPropertyCodec(
     override suspend fun ReadContext.decodeThis(): DefaultListProperty<*> {
         return decodePreservingIdentity { id ->
             val type: Class<Any> = readClass().uncheckedCast()
-            val property = propertyFactory.listProperty(type) as DefaultListProperty<*>
+            val provenance = read() as ByteArray?
+            val property = PropertyProvenanceTransport.factory(propertyFactory, provenance).listProperty(type) as DefaultListProperty<*>
             isolate.identities.putInstance(id, property)
             val value = providerCodec.run { decodeValue() }
-            property.apply {
-                fromState(value.uncheckedCast())
+            PropertyProvenanceTransport.restore(property, provenance) {
+                property.fromState(value.uncheckedCast())
             }
+            property
         }
     }
 }
@@ -518,6 +529,7 @@ class SetPropertyCodec(
     override suspend fun WriteContext.encodeThis(value: DefaultSetProperty<*>) {
         encodePreservingIdentityOf(value) {
             writeClass(value.elementType)
+            write(PropertyProvenanceTransport.encodeCheckpoint(value))
             providerCodec.run { encodeValue(value.calculateExecutionTimeValue()) }
         }
     }
@@ -525,12 +537,14 @@ class SetPropertyCodec(
     override suspend fun ReadContext.decodeThis(): DefaultSetProperty<*> {
         return decodePreservingIdentity { id ->
             val type: Class<Any> = readClass().uncheckedCast()
-            val property = propertyFactory.setProperty(type) as DefaultSetProperty<*>
+            val provenance = read() as ByteArray?
+            val property = PropertyProvenanceTransport.factory(propertyFactory, provenance).setProperty(type) as DefaultSetProperty<*>
             isolate.identities.putInstance(id, property)
             val value = providerCodec.run { decodeValue() }
-            property.apply {
-                fromState(value.uncheckedCast())
+            PropertyProvenanceTransport.restore(property, provenance) {
+                property.fromState(value.uncheckedCast())
             }
+            property
         }
     }
 }
@@ -545,6 +559,7 @@ class MapPropertyCodec(
         encodePreservingIdentityOf(value) {
             writeClass(value.keyType)
             writeClass(value.valueType)
+            write(PropertyProvenanceTransport.encodeCheckpoint(value))
             providerCodec.run { encodeValue(value.calculateExecutionTimeValue()) }
         }
     }
@@ -553,12 +568,14 @@ class MapPropertyCodec(
         return decodePreservingIdentity { id ->
             val keyType: Class<Any> = readClass().uncheckedCast()
             val valueType: Class<Any> = readClass().uncheckedCast()
-            val property = propertyFactory.mapProperty(keyType, valueType) as DefaultMapProperty<*, *>
+            val provenance = read() as ByteArray?
+            val property = PropertyProvenanceTransport.factory(propertyFactory, provenance).mapProperty(keyType, valueType) as DefaultMapProperty<*, *>
             isolate.identities.putInstance(id, property)
             val value = providerCodec.run { decodeValue() }
-            property.apply {
-                fromState(value.uncheckedCast())
+            PropertyProvenanceTransport.restore(property, provenance) {
+                property.fromState(value.uncheckedCast())
             }
+            property
         }
     }
 }

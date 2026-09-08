@@ -26,6 +26,7 @@ import org.gradle.api.internal.file.FileResolver;
 import org.gradle.api.internal.model.NamedObjectInstantiator;
 import org.gradle.api.internal.provider.DefaultPropertyFactory;
 import org.gradle.api.internal.provider.PropertyFactory;
+import org.gradle.api.internal.provider.ProvenanceManagedFactory;
 import org.gradle.api.internal.provider.PropertyHost;
 import org.gradle.api.internal.tasks.DefaultTaskDependencyFactory;
 import org.gradle.api.internal.tasks.TaskDependencyFactory;
@@ -184,11 +185,11 @@ public class WorkerSharedGlobalScopeServices extends BasicGlobalScopeServices {
             new RegularFilePropertyManagedFactory(filePropertyFactory),
             new DirectoryManagedFactory(fileFactory),
             new DirectoryPropertyManagedFactory(filePropertyFactory),
-            new SetPropertyManagedFactory(propertyFactory),
-            new ListPropertyManagedFactory(propertyFactory),
-            new MapPropertyManagedFactory(propertyFactory),
-            new PropertyManagedFactory(propertyFactory),
-            new ProviderManagedFactory(),
+            new ProvenanceManagedFactory(propertyFactory, SetPropertyManagedFactory::new),
+            new ProvenanceManagedFactory(propertyFactory, ListPropertyManagedFactory::new),
+            new ProvenanceManagedFactory(propertyFactory, MapPropertyManagedFactory::new),
+            new ProvenanceManagedFactory(propertyFactory, PropertyManagedFactory::new),
+            new ProvenanceManagedFactory(propertyFactory, ignored -> new ProviderManagedFactory()),
             namedObjectInstantiator
         );
     }

@@ -18,6 +18,8 @@ package org.gradle.api.internal.provider;
 
 import org.gradle.api.Transformer;
 import org.gradle.api.internal.provenance.Attribution;
+import org.gradle.api.internal.provenance.ProvenanceCheckpoint;
+import org.gradle.internal.Describables;
 import org.gradle.api.internal.provenance.EffectiveProvenanceView;
 import org.gradle.api.internal.provenance.MutationOccurrence;
 import org.gradle.api.internal.provenance.OrdinaryProvenanceState;
@@ -32,10 +34,11 @@ import org.jspecify.annotations.Nullable;
 import java.util.Objects;
 
 /** Bridges successful ordinary scalar operations to provider-independent provenance state. */
-public class AttributedProperty<T> extends DefaultProperty<T> {
+public class AttributedProperty<T> extends DefaultProperty<T> implements RestorableProvenance {
     @Nullable
     private PropertyProvenanceHost provenanceHost;
     private final OrdinaryProvenanceState provenance;
+    private boolean restoring;
 
     public AttributedProperty(PropertyProvenanceHost host, Class<T> type) {
         super(host, type);
@@ -43,6 +46,22 @@ public class AttributedProperty<T> extends DefaultProperty<T> {
         provenance = new OrdinaryProvenanceState(host.getOwnerScope(), host.newOccurrenceScope());
     }
 
+    @Override
+    public void beginProvenanceRestore() {
+        restoring = true;
+    }
+
+    @Override
+    public void restoreProvenance(ProvenanceCheckpoint checkpoint) {
+        provenance.restore(checkpoint);
+        String modelPath = checkpoint.getView().getTarget().getModelPath();
+        if (!modelPath.equals("'unnamed property'")) {
+            attachOwner(null, Describables.of(modelPath));
+        }
+        restoring = false;
+    }
+
+    @Override
     @Nullable
     public MutationOccurrence getLastAcceptedMutation() {
         return provenance.getLastAcceptedMutation();
@@ -58,6 +77,7 @@ public class AttributedProperty<T> extends DefaultProperty<T> {
     }
 
     /** Reading provenance never queries value presence or producer tasks. */
+    @Override
     public EffectiveProvenanceView getEffectiveProvenance() {
         return provenance.getEffectiveProvenance(modelPath());
     }
@@ -91,7 +111,9 @@ public class AttributedProperty<T> extends DefaultProperty<T> {
     @Override
     protected void setSupplier(ProviderInternal<? extends T> supplier) {
         super.setSupplier(supplier);
-        provenance.acceptedBinding(currentAttribution(), SemanticOperation.EXPLICIT_BINDING);
+        if (!restoring) {
+            provenance.acceptedBinding(currentAttribution(), SemanticOperation.EXPLICIT_BINDING);
+        }
     }
 
     @Override

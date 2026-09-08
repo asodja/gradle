@@ -427,6 +427,11 @@ public class IsolatableSerializerRegistry extends DefaultSerializerRegistry impl
             encoder.writeString(value.getTargetType().getName());
             Isolatable<?> state = value.getState();
             writeIsolatable(encoder, state);
+            byte[] provenance = value.getProvenance();
+            encoder.writeBoolean(provenance != null);
+            if (provenance != null) {
+                encoder.writeBinary(provenance);
+            }
         }
 
         @Override
@@ -437,7 +442,7 @@ public class IsolatableSerializerRegistry extends DefaultSerializerRegistry impl
             Isolatable<?> state = readIsolatable(decoder);
 
             ManagedFactory factory = managedFactoryRegistry.lookup(factoryId);
-            return new IsolatedManagedValue(publicClass, factory, state);
+            return new IsolatedManagedValue(publicClass, factory, state, decoder.readBoolean() ? decoder.readBinary() : null);
         }
 
         @Override

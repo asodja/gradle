@@ -17,6 +17,7 @@
 package org.gradle.api.internal.provider;
 
 import org.gradle.api.InvalidUserCodeException;
+import org.gradle.api.internal.provenance.ScopeIdentity;
 import org.gradle.api.artifacts.ExternalModuleDependencyBundle;
 import org.gradle.api.file.Directory;
 import org.gradle.api.file.RegularFile;
@@ -35,14 +36,25 @@ public class DefaultPropertyFactory implements PropertyFactory {
     }
 
     @Override
+    public PropertyFactory withProvenance(ScopeIdentity owner) {
+        return new DefaultPropertyFactory(PropertyProvenanceTransport.host(propertyHost, owner));
+    }
+
+    @Override
     @Deprecated
     public DefaultProperty<?> propertyWithNoType() {
+        if (propertyHost instanceof PropertyProvenanceHost) {
+            return new DiagnosticProperty<>((PropertyProvenanceHost) propertyHost, null);
+        }
         return new DefaultProperty<>(propertyHost, null);
     }
 
     @Override
     @Deprecated
     public <T> DefaultProperty<T> propertyOfAnyType(Class<T> type) {
+        if (propertyHost instanceof PropertyProvenanceHost) {
+            return new DiagnosticProperty<>((PropertyProvenanceHost) propertyHost, maybeAsWrapperType(type));
+        }
         return new DefaultProperty<>(propertyHost, maybeAsWrapperType(type));
     }
 

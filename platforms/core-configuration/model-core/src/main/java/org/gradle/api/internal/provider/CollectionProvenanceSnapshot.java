@@ -30,7 +30,7 @@ import java.util.Collection;
 import java.util.Map;
 
 /** Captured collection supplier and descriptor view; further source rebinding does not alter either. */
-public abstract class CollectionProvenanceSnapshot<C> extends AbstractMinimalProvider<C> {
+public abstract class CollectionProvenanceSnapshot<C> extends AbstractMinimalProvider<C> implements ProvenanceAware {
     private final Class<C> type;
     private final ScopeIdentity owner;
     private final String modelPath;
@@ -56,10 +56,12 @@ public abstract class CollectionProvenanceSnapshot<C> extends AbstractMinimalPro
         return new MapSnapshot<>(type, supplier, state, modelPath);
     }
 
+    @Override
     public EffectiveProvenanceView getEffectiveProvenance() {
         return EffectiveProvenanceView.captured(new TargetContext(owner, modelPath), source, updates, convention);
     }
 
+    @Override
     public String getConfigurationTrace() {
         return ProvenanceRenderer.configuration(getEffectiveProvenance());
     }

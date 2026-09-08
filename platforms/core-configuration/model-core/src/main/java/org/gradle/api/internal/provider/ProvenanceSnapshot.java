@@ -26,7 +26,7 @@ import org.gradle.internal.evaluation.EvaluationScopeContext;
 import org.jspecify.annotations.Nullable;
 
 /** A captured supplier and descriptor checkpoint, with no reference to its former property owner. */
-public class ProvenanceSnapshot<T> extends AbstractMinimalProvider<T> {
+public class ProvenanceSnapshot<T> extends AbstractMinimalProvider<T> implements ProvenanceAware {
     private final Class<T> type;
     private final ProviderInternal<? extends T> supplier;
     private final ScopeIdentity ownerScope;
@@ -58,6 +58,7 @@ public class ProvenanceSnapshot<T> extends AbstractMinimalProvider<T> {
         this.convention = convention;
     }
 
+    @Override
     public EffectiveProvenanceView getEffectiveProvenance() {
         return EffectiveProvenanceView.captured(new TargetContext(ownerScope, modelPath), source, updates, convention);
     }

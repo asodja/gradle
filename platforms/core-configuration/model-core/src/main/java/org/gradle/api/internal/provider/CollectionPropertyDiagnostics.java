@@ -19,21 +19,41 @@ package org.gradle.api.internal.provider;
 import org.gradle.api.internal.provenance.EffectiveProvenanceView;
 import org.gradle.api.internal.provenance.MutationOccurrence;
 import org.gradle.api.internal.provenance.ProvenanceRenderer;
+import org.gradle.api.internal.provenance.ProvenanceCheckpoint;
+import org.gradle.internal.Describables;
 import org.jspecify.annotations.Nullable;
 
 /** Read-only explanation surface implemented by the enabled collection property subclasses. */
-public interface CollectionPropertyDiagnostics {
+public interface CollectionPropertyDiagnostics extends RestorableProvenance {
     CollectionPropertyProvenance getProvenance();
 
+    @Override
+    default void beginProvenanceRestore() {
+        getProvenance().restoring = true;
+    }
+
+    @Override
+    default void restoreProvenance(ProvenanceCheckpoint checkpoint) {
+        getProvenance().state.restore(checkpoint);
+        String modelPath = checkpoint.getView().getTarget().getModelPath();
+        if (!modelPath.equals("'unnamed property'")) {
+            ((AbstractProperty<?, ?>) this).attachOwner(null, Describables.of(modelPath));
+        }
+        getProvenance().restoring = false;
+    }
+
+    @Override
     default EffectiveProvenanceView getEffectiveProvenance() {
         return getProvenance().state.getEffectiveProvenance(CollectionPropertyProvenance.modelPath(((AbstractProperty<?, ?>) this).getDeclaredDisplayName()));
     }
 
+    @Override
     @Nullable
     default MutationOccurrence getLastAcceptedMutation() {
         return getProvenance().state.getLastAcceptedMutation();
     }
 
+    @Override
     default String getConfigurationTrace() {
         return ProvenanceRenderer.configuration(getEffectiveProvenance());
     }

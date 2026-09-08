@@ -16,26 +16,26 @@
 
 package org.gradle.api.internal.provider;
 
-import org.gradle.api.internal.provenance.OrdinaryProvenanceState;
+import org.gradle.api.internal.provenance.EffectiveProvenanceView;
+import org.gradle.api.internal.provenance.MutationOccurrence;
+import org.gradle.api.internal.provenance.ProvenanceCheckpoint;
 import org.gradle.api.internal.provenance.ProvenanceRenderer;
+import org.jspecify.annotations.Nullable;
 
-/** Missing-value reporting for a captured supplier, without retaining its property or mutable state. */
-public final class DiagnosticProvenanceSnapshot<T> extends ProvenanceSnapshot<T> {
-    DiagnosticProvenanceSnapshot(Class<T> type, ProviderInternal<? extends T> supplier, OrdinaryProvenanceState state, String modelPath) {
-        super(type, supplier, state, modelPath);
-    }
+/** Read-only descriptor transport surface for diagnostic properties and captured providers. */
+public interface ProvenanceAware {
+    EffectiveProvenanceView getEffectiveProvenance();
 
-    @Override
-    public String getConfigurationTrace() {
+    default String getConfigurationTrace() {
         return ProvenanceRenderer.configuration(getEffectiveProvenance());
     }
 
-    @Override
-    protected Value<? extends T> calculateOwnPresentValue() {
-        try {
-            return super.calculateOwnPresentValue();
-        } catch (MissingValueException failure) {
-            throw PropertyProvenanceDiagnostics.missing(failure, getEffectiveProvenance());
-        }
+    @Nullable
+    default MutationOccurrence getLastAcceptedMutation() {
+        return null;
+    }
+
+    default ProvenanceCheckpoint getProvenanceCheckpoint() {
+        return new ProvenanceCheckpoint(getEffectiveProvenance(), getLastAcceptedMutation());
     }
 }

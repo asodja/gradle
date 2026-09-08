@@ -39,6 +39,7 @@ public final class OrdinaryProvenanceState {
     private UpdateSequence updates = UpdateSequence.empty();
     @Nullable
     private EffectiveProvenanceView finalizedProvenance;
+    private boolean restored;
 
     public OrdinaryProvenanceState(ScopeIdentity ownerScope, String occurrenceScope) {
         this.ownerScope = ownerScope;
@@ -84,7 +85,17 @@ public final class OrdinaryProvenanceState {
     }
 
     public boolean isFinalized() {
-        return finalizedProvenance != null;
+        return finalizedProvenance != null && !restored;
+    }
+
+    /** Restores a historical checkpoint beside the engine's recreated explicit value state. */
+    public void restore(ProvenanceCheckpoint checkpoint) {
+        finalizedProvenance = checkpoint.getView();
+        source = finalizedProvenance.getSource();
+        updates = finalizedProvenance.getUpdates();
+        convention = null;
+        lastAcceptedMutation = checkpoint.getLastAcceptedMutation();
+        restored = true;
     }
 
     public void acceptedBinding(Attribution attribution, SemanticOperation operation) {
@@ -140,6 +151,7 @@ public final class OrdinaryProvenanceState {
     /** Called only after successful value finalization; the checkpoint precedes value calculation. */
     public void freeze(EffectiveProvenanceView checkpoint) {
         finalizedProvenance = checkpoint;
+        restored = false;
         convention = null;
         source = checkpoint.getSource();
         updates = checkpoint.getUpdates();
@@ -152,6 +164,12 @@ public final class OrdinaryProvenanceState {
     }
 
     private MutationOccurrence accepted(Attribution attribution, SemanticOperation operation) {
+        if (restored) {
+            // Recreation installs an explicit value/plan, not a live convention. Retain its historical
+            // explanation until a new mutation, without resurrecting a discarded engine convention.
+            finalizedProvenance = null;
+            restored = false;
+        }
         MutationOccurrence occurrence = new MutationOccurrence(occurrenceScope, nextSequence++, attribution, operation);
         lastAcceptedMutation = occurrence;
         return occurrence;

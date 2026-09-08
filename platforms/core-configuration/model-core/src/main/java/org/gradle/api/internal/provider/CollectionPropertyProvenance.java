@@ -51,6 +51,7 @@ final class CollectionPropertyProvenance {
     @Nullable
     private Operation operation;
     private boolean adding;
+    boolean restoring;
     private boolean preservingConvention;
 
     CollectionPropertyProvenance(PropertyProvenanceHost host) {
@@ -90,7 +91,7 @@ final class CollectionPropertyProvenance {
     }
 
     public void bound() {
-        if (!adding) {
+        if (!adding && !restoring) {
             state.acceptedBinding(attribution(), SemanticOperation.EXPLICIT_BINDING);
         }
     }
@@ -105,6 +106,9 @@ final class CollectionPropertyProvenance {
     }
 
     public void cleared(boolean convention, boolean explicit, boolean missing) {
+        if (restoring) {
+            return;
+        }
         if (convention) {
             state.acceptedClearConvention(attribution(), explicit);
         } else {

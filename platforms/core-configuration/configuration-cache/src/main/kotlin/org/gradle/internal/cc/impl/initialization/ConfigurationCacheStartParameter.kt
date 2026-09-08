@@ -63,6 +63,8 @@ class ConfigurationCacheStartParameter internal constructor(
      *
      * The default is `true`.
      */
+    val isPropertyProvenanceEnabled: Boolean = internalOptions.getBoolean("org.gradle.internal.property-provenance", false)
+
     val isDeduplicatingStrings: Boolean = internalOptions.getBoolean("org.gradle.internal.configuration-cache.deduplicate-strings", true)
 
     /**
