@@ -16,16 +16,21 @@
 
 package org.gradle.api.internal.provider;
 
+import org.gradle.api.Transformer;
 import org.gradle.api.internal.provenance.Attribution;
 import org.gradle.api.internal.provenance.ContributorKey;
 import org.gradle.api.internal.provenance.DiagnosticOrigin;
+import org.gradle.api.internal.provenance.EffectiveProvenanceView.ProviderBoundary;
 import org.gradle.api.internal.provenance.ProvenanceCheckpoint;
-import org.gradle.api.internal.provenance.ScopeIdentity;
 import org.gradle.api.internal.provenance.ProvenanceRenderer;
+import org.gradle.api.internal.provenance.ScopeIdentity;
+import org.gradle.api.provider.Provider;
+import org.gradle.api.specs.Spec;
 import org.gradle.internal.state.ModelObject;
 import org.jspecify.annotations.Nullable;
 
 import java.util.UUID;
+import java.util.function.BiFunction;
 
 /** Bridges descriptor transport to ordinary property recreation and captured provider evaluation. */
 public final class PropertyProvenanceTransport {
@@ -145,26 +150,68 @@ public final class PropertyProvenanceTransport {
 
         @Override
         public ValueProducer getProducer() {
-            return supplier.getProducer();
+            return PropertyProvenanceDiagnostics.evaluate(this, supplier::getProducer);
         }
 
         @Override
         public ExecutionTimeValue<? extends T> calculateExecutionTimeValue() {
-            return supplier.calculateExecutionTimeValue();
+            return PropertyProvenanceDiagnostics.evaluate(this, supplier::calculateExecutionTimeValue);
         }
 
         @Override
         protected Value<? extends T> calculateOwnValue(ValueConsumer consumer) {
-            return supplier.calculateValue(consumer);
+            return PropertyProvenanceDiagnostics.evaluate(this, () -> supplier.calculateValue(consumer));
         }
 
         @Override
         protected Value<? extends T> calculateOwnPresentValue() {
-            try {
-                return super.calculateOwnPresentValue();
-            } catch (MissingValueException failure) {
-                throw PropertyProvenanceDiagnostics.missing(failure, getEffectiveProvenance());
-            }
+            return PropertyProvenanceDiagnostics.evaluate(this, super::calculateOwnPresentValue);
         }
+        @Override
+        public <S> ProviderInternal<S> map(Transformer<? extends @Nullable S, ? super T> transformer) {
+            return DiagnosticProvider.derived(super.map(transformer), this, ProviderBoundary.MAP);
+        }
+
+        @Override
+        public ProviderInternal<T> filter(Spec<? super T> spec) {
+            return DiagnosticProvider.derived(super.filter(spec), this, ProviderBoundary.FILTER);
+        }
+
+        @Override
+        public <S> Provider<S> flatMap(Transformer<? extends @Nullable Provider<? extends S>, ? super T> transformer) {
+            return DiagnosticProvider.derived(super.flatMap(transformer), this, ProviderBoundary.FLAT_MAP);
+        }
+
+        @Override
+        public Provider<T> orElse(T value) {
+            return DiagnosticProvider.derived(super.orElse(value), this, ProviderBoundary.OR_ELSE);
+        }
+
+        @Override
+        public Provider<T> orElse(Provider<? extends T> provider) {
+            return DiagnosticProvider.derived(super.orElse(provider), this, ProviderBoundary.OR_ELSE);
+        }
+
+        @Override
+        public <U, R> Provider<R> zip(Provider<U> right, BiFunction<? super T, ? super U, ? extends R> combiner) {
+            return DiagnosticProvider.derived(super.zip(right, combiner), this, ProviderBoundary.ZIP);
+        }
+
+        @Override
+        public T get() {
+            return PropertyProvenanceDiagnostics.evaluate(this, super::get);
+        }
+
+        @Override
+        @Nullable
+        public T getOrNull() {
+            return PropertyProvenanceDiagnostics.evaluate(this, super::getOrNull);
+        }
+
+        @Override
+        public T getOrElse(T defaultValue) {
+            return PropertyProvenanceDiagnostics.evaluate(this, () -> super.getOrElse(defaultValue));
+        }
+
     }
 }

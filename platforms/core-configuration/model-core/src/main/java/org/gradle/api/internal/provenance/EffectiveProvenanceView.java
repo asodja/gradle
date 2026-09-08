@@ -29,6 +29,11 @@ import java.util.Objects;
  * A live convention root must be resolved by the owner again at each checkpoint, not frozen by reusing a view.
  */
 public final class EffectiveProvenanceView {
+    /** Provider operations are context boundaries, never accepted property mutations. */
+    public enum ProviderBoundary {
+        MAP, FILTER, FLAT_MAP, OR_ELSE, ZIP, MAP_ENTRY, MAP_KEYS
+    }
+
     public enum SourceSelection { EXPLICIT, CONVENTION, UNCONFIGURED, UNKNOWN, DEFAULT }
     public enum SourceKnowledge { KNOWN, UNATTRIBUTED, UNCONFIGURED, UNAVAILABLE, DEFAULT }
     public enum RootKind { CAPTURED, LIVE_CONVENTION }
@@ -105,6 +110,7 @@ public final class EffectiveProvenanceView {
         }
     }
 
+    private final List<ProviderBoundary> providerBoundaries;
     private final TargetContext target;
     private final RootKind rootKind;
     private final Source source;
@@ -120,6 +126,15 @@ public final class EffectiveProvenanceView {
         List<MutationOccurrence> shadowedConfiguration,
         List<String> partialReasons
     ) {
+        this(target, rootKind, source, updates, shadowedConfiguration, partialReasons, Collections.emptyList());
+    }
+
+    public EffectiveProvenanceView(
+        TargetContext target, RootKind rootKind, Source source, UpdateSequence updates,
+        List<MutationOccurrence> shadowedConfiguration, List<String> partialReasons,
+        List<ProviderBoundary> providerBoundaries
+    ) {
+        this.providerBoundaries = Collections.unmodifiableList(new ArrayList<>(providerBoundaries));
         this.target = Objects.requireNonNull(target);
         this.rootKind = Objects.requireNonNull(rootKind);
         this.source = Objects.requireNonNull(source);
@@ -159,6 +174,16 @@ public final class EffectiveProvenanceView {
         return new EffectiveProvenanceView(target, RootKind.CAPTURED, source, updates, shadowed, reasons);
     }
 
+    public List<ProviderBoundary> getProviderBoundaries() {
+        return providerBoundaries;
+    }
+
+    public EffectiveProvenanceView through(List<ProviderBoundary> nextBoundaries) {
+        List<ProviderBoundary> boundaries = new ArrayList<>(providerBoundaries);
+        boundaries.addAll(nextBoundaries);
+        return new EffectiveProvenanceView(target, rootKind, source, updates, shadowedConfiguration, partialReasons, boundaries);
+    }
+
     public TargetContext getTarget() {
         return target;
     }
@@ -181,7 +206,7 @@ public final class EffectiveProvenanceView {
 
     /** Complete local coverage says nothing about upstream Provider dependencies or failure causality. */
     public boolean isCompleteLocal() {
-        return partialReasons.isEmpty();
+        return partialReasons.isEmpty() && providerBoundaries.isEmpty();
     }
 
     public List<String> getPartialReasons() {

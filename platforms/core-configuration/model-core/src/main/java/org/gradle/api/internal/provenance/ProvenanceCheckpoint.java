@@ -33,7 +33,7 @@ import java.util.List;
  * The versioned format contains no executable code, property values or runtime attribution services.
  */
 public final class ProvenanceCheckpoint {
-    private static final int VERSION = 1;
+    private static final int VERSION = 2;
     private final EffectiveProvenanceView view;
     @Nullable
     private final MutationOccurrence lastAcceptedMutation;
@@ -77,6 +77,10 @@ public final class ProvenanceCheckpoint {
             out.writeInt(view.getPartialReasons().size());
             for (String reason : view.getPartialReasons()) {
                 string(out, reason);
+            }
+            out.writeInt(view.getProviderBoundaries().size());
+            for (EffectiveProvenanceView.ProviderBoundary boundary : view.getProviderBoundaries()) {
+                string(out, boundary.name());
             }
             occurrence(out, lastAcceptedMutation);
             return bytes.toByteArray();
@@ -122,7 +126,12 @@ public final class ProvenanceCheckpoint {
             for (int i = 0; i < reasonCount; i++) {
                 reasons.add(string(in));
             }
-            ProvenanceCheckpoint result = new ProvenanceCheckpoint(new EffectiveProvenanceView(target, root, source, updates, shadowed, reasons), occurrence(in));
+            List<EffectiveProvenanceView.ProviderBoundary> boundaries = new ArrayList<>();
+            int boundaryCount = count(in);
+            for (int i = 0; i < boundaryCount; i++) {
+                boundaries.add(EffectiveProvenanceView.ProviderBoundary.valueOf(string(in)));
+            }
+            ProvenanceCheckpoint result = new ProvenanceCheckpoint(new EffectiveProvenanceView(target, root, source, updates, shadowed, reasons, boundaries), occurrence(in));
             if (in.available() != 0) {
                 throw new IllegalArgumentException("Trailing property provenance checkpoint data.");
             }

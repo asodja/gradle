@@ -17,6 +17,9 @@
 package org.gradle.api.internal.tasks.properties;
 
 import com.google.common.base.Suppliers;
+import org.gradle.api.internal.provider.PropertyProvenanceDiagnostics;
+import org.gradle.api.internal.provenance.EffectiveProvenanceView;
+import org.gradle.api.internal.provenance.ProvenanceReadSnapshot;
 import org.gradle.api.problems.ProblemSpec;
 import org.gradle.api.problems.internal.GradleCoreProblemGroup;
 import org.gradle.api.provider.HasConfigurableValue;
@@ -48,12 +51,16 @@ public abstract class AbstractValidatingProperty implements ValidatingProperty {
     private static final String VALUE_NOT_SET = "VALUE_NOT_SET";
 
     public static void reportValueNotSet(String propertyName, TypeValidationContext context, boolean hasConfigurableValue) {
+        reportValueNotSet(propertyName, context, hasConfigurableValue, null);
+    }
+
+    private static void reportValueNotSet(String propertyName, TypeValidationContext context, boolean hasConfigurableValue, @Nullable EffectiveProvenanceView checkpoint) {
         context.visitPropertyError(problem -> {
             ProblemSpec problemSpec = problem.forProperty(propertyName)
                 .id(TextUtil.screamingSnakeToKebabCase(VALUE_NOT_SET), "Value not set", GradleCoreProblemGroup.validation().property())
                 .contextualLabel("doesn't have a configured value")
                 .documentedAt(userManual("validation_problems", VALUE_NOT_SET.toLowerCase(Locale.ROOT)))
-                .details("This property isn't marked as optional and no value has been configured");
+                .details(PropertyProvenanceDiagnostics.validationDetails("This property isn't marked as optional and no value has been configured", checkpoint));
             if (hasConfigurableValue) {
                 problemSpec.solution("Assign a value to '" + propertyName + "'");
             } else {
@@ -67,13 +74,15 @@ public abstract class AbstractValidatingProperty implements ValidatingProperty {
     public void validate(PropertyValidationContext context) {
         // unnest callables without resolving deferred values (providers, factories)
         Object unnested = DeferredUtil.unpackNestableDeferred(value.call());
+        ProvenanceReadSnapshot snapshot = optional ? null : PropertyProvenanceDiagnostics.snapshot(unnested);
         if (isPresent(unnested)) {
             // only resolve deferred values if actually required by some action
             Supplier<Object> valueSupplier = Suppliers.memoize(() -> DeferredUtil.unpack(unnested));
             validationAction.validate(propertyName, valueSupplier, context);
         } else {
             if (!optional) {
-                reportValueNotSet(propertyName, context, hasConfigurableValue(unnested));
+                EffectiveProvenanceView checkpoint = snapshot == null ? null : snapshot.toView();
+                reportValueNotSet(propertyName, context, hasConfigurableValue(unnested), checkpoint);
             }
         }
     }

@@ -17,6 +17,7 @@
 package org.gradle.api.internal.provider;
 
 import org.gradle.api.internal.provenance.EffectiveProvenanceView;
+import org.gradle.api.internal.provenance.ProvenanceReadSnapshot;
 import org.gradle.api.internal.provenance.MutationOccurrence;
 import org.gradle.api.internal.provenance.OrdinaryProvenanceState;
 import org.gradle.api.internal.provenance.ScopeIdentity;
@@ -56,6 +57,11 @@ public class ProvenanceSnapshot<T> extends AbstractMinimalProvider<T> implements
         this.source = source;
         this.updates = updates;
         this.convention = convention;
+    }
+
+    @Override
+    public ProvenanceReadSnapshot getProvenanceReadSnapshot() {
+        return ProvenanceReadSnapshot.captured(ownerScope, modelPath, source, updates, convention);
     }
 
     @Override

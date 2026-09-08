@@ -43,8 +43,10 @@ class AttributedPropertyTest extends Specification {
         !(new DefaultPropertyFactory(host).listProperty(String) instanceof AttributedProperty)
         !(new DefaultPropertyFactory(host).setProperty(String) instanceof AttributedProperty)
         !(new DefaultPropertyFactory(host).mapProperty(String, String) instanceof AttributedProperty)
-        new DefaultPropertyFactory(host).propertyOfAnyType(String).class == DefaultProperty
-        new DefaultPropertyFactory(host).propertyWithNoType().class == DefaultProperty
+        new DefaultPropertyFactory(host).propertyOfAnyType(String) instanceof DiagnosticProperty
+        new DefaultPropertyFactory(host).propertyWithNoType() instanceof DiagnosticProperty
+        new DefaultPropertyFactory(PropertyHost.NO_OP).propertyOfAnyType(String).class == DefaultProperty
+        new DefaultPropertyFactory(PropertyHost.NO_OP).propertyWithNoType().class == DefaultProperty
         property.lastAcceptedMutation == null
     }
 

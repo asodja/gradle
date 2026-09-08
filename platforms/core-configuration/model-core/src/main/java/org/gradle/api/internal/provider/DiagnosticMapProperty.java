@@ -17,14 +17,18 @@
 package org.gradle.api.internal.provider;
 
 import org.gradle.api.Transformer;
-import org.gradle.api.internal.provider.CollectionPropertyProvenance.Operation;
+import org.gradle.api.internal.provenance.EffectiveProvenanceView.ProviderBoundary;
 import org.gradle.api.internal.provenance.EffectiveProvenanceView;
+import org.gradle.api.internal.provider.CollectionPropertyProvenance.Operation;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.provider.SupportsConvention;
+import org.gradle.api.specs.Spec;
 import org.gradle.internal.evaluation.EvaluationScopeContext;
 import org.jspecify.annotations.Nullable;
 
 import java.util.Map;
+import java.util.Set;
+import java.util.function.BiFunction;
 
 /** Opt-in collection attribution and failure reporting at the existing engine mutation boundaries. */
 public final class DiagnosticMapProperty<K, V> extends DefaultMapProperty<K, V> implements CollectionPropertyDiagnostics {
@@ -227,11 +231,7 @@ public final class DiagnosticMapProperty<K, V> extends DefaultMapProperty<K, V> 
 
     @Override
     protected Value<? extends Map<K, V>> calculateOwnPresentValue() {
-        try {
-            return super.calculateOwnPresentValue();
-        } catch (MissingValueException failure) {
-            throw provenance.missing(failure, getDeclaredDisplayName());
-        }
+        return PropertyProvenanceDiagnostics.evaluate(this, super::calculateOwnPresentValue);
     }
 
     @Override
@@ -241,4 +241,125 @@ public final class DiagnosticMapProperty<K, V> extends DefaultMapProperty<K, V> 
         provenance.finalized(checkpoint);
         return result;
     }
+
+    @Override
+    public <S> ProviderInternal<S> map(Transformer<? extends @Nullable S, ? super Map<K, V>> transformer) {
+        return DiagnosticProvider.derived(super.map(transformer), this, ProviderBoundary.MAP);
+    }
+
+    @Override
+    public ProviderInternal<Map<K, V>> filter(Spec<? super Map<K, V>> spec) {
+        return DiagnosticProvider.derived(super.filter(spec), this, ProviderBoundary.FILTER);
+    }
+
+    @Override
+    public <S> Provider<S> flatMap(Transformer<? extends @Nullable Provider<? extends S>, ? super Map<K, V>> transformer) {
+        return DiagnosticProvider.derived(super.flatMap(transformer), this, ProviderBoundary.FLAT_MAP);
+    }
+
+    @Override
+    public Provider<Map<K, V>> orElse(Map<K, V> value) {
+        return DiagnosticProvider.derived(super.orElse(value), this, ProviderBoundary.OR_ELSE);
+    }
+
+    @Override
+    public Provider<Map<K, V>> orElse(Provider<? extends Map<K, V>> provider) {
+        return DiagnosticProvider.derived(super.orElse(provider), this, ProviderBoundary.OR_ELSE);
+    }
+
+    @Override
+    public <U, R> Provider<R> zip(Provider<U> right, BiFunction<? super Map<K, V>, ? super U, ? extends R> combiner) {
+        return DiagnosticProvider.derived(super.zip(right, combiner), this, ProviderBoundary.ZIP);
+    }
+
+    @Override
+    protected Value<? extends Map<K, V>> calculateOwnValue(ValueConsumer consumer) {
+        return PropertyProvenanceDiagnostics.evaluate(this, () -> super.calculateOwnValue(consumer));
+    }
+
+    @Override
+    public boolean calculatePresence(ValueConsumer consumer) {
+        return PropertyProvenanceDiagnostics.evaluate(this, () -> super.calculatePresence(consumer));
+    }
+
+    @Override
+    public ExecutionTimeValue<? extends Map<K, V>> calculateExecutionTimeValue() {
+        return PropertyProvenanceDiagnostics.evaluate(this, super::calculateExecutionTimeValue);
+    }
+
+    @Override
+    public ValueProducer getProducer() {
+        return PropertyProvenanceDiagnostics.evaluate(this, super::getProducer);
+    }
+
+    @Override
+    public void finalizeValue() {
+        PropertyProvenanceDiagnostics.evaluate(this, () -> {
+            super.finalizeValue();
+            return null;
+        });
+    }
+
+    @Override
+    public void setFromAnyValue(Object value) {
+        try {
+            super.setFromAnyValue(value);
+        } catch (RuntimeException failure) {
+            throw provenance.rejected(failure, Operation.SET, getDeclaredDisplayName());
+        }
+    }
+
+    @Override
+    public void put(K key, V value) {
+        try {
+            super.put(key, value);
+        } catch (RuntimeException failure) {
+            throw provenance.rejected(failure, Operation.PUT, getDeclaredDisplayName());
+        }
+    }
+
+    @Override
+    public void put(K key, Provider<? extends V> value) {
+        try {
+            super.put(key, value);
+        } catch (RuntimeException failure) {
+            throw provenance.rejected(failure, Operation.PUT, getDeclaredDisplayName());
+        }
+    }
+
+    @Override
+    public void putAll(Provider<? extends Map<? extends K, ? extends V>> values) {
+        try {
+            super.putAll(values);
+        } catch (RuntimeException failure) {
+            throw provenance.rejected(failure, Operation.PUT_ALL, getDeclaredDisplayName());
+        }
+    }
+
+    @Override
+    public Provider<V> getting(K key) {
+        return DiagnosticProvider.derived(super.getting(key), this, ProviderBoundary.MAP_ENTRY);
+    }
+
+    @Override
+    public Provider<Set<K>> keySet() {
+        return DiagnosticProvider.derived(super.keySet(), this, ProviderBoundary.MAP_KEYS);
+    }
+
+    @Override
+    public Map<K, V> get() {
+        return PropertyProvenanceDiagnostics.evaluate(this, super::get);
+    }
+
+    @Override
+    @Nullable
+    public Map<K, V> getOrNull() {
+        return PropertyProvenanceDiagnostics.evaluate(this, super::getOrNull);
+    }
+
+    @Override
+    public Map<K, V> getOrElse(Map<K, V> defaultValue) {
+        return PropertyProvenanceDiagnostics.evaluate(this, () -> super.getOrElse(defaultValue));
+    }
+
 }

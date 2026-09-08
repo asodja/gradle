@@ -48,7 +48,13 @@ public final class PropertyUpdateClassifier {
     /** Returns zero for an unrecognized shape, including chains beyond the inspection budget. */
     private static int mapCount(Provider<?> candidate, Provider<?> previous) {
         Provider<?> cursor = candidate;
-        for (int i = 0; i < MAX_MAPS && cursor.getClass() == TransformBackedProvider.class; i++) {
+        for (int i = 0; i < MAX_MAPS; i++) {
+            if (cursor instanceof DiagnosticProvider) {
+                cursor = ((DiagnosticProvider<?>) cursor).getDelegate();
+            }
+            if (cursor.getClass() != TransformBackedProvider.class) {
+                return 0;
+            }
             cursor = ((TransformBackedProvider<?, ?>) cursor).provider;
             if (cursor == previous) {
                 return i + 1;

@@ -21,6 +21,7 @@ import org.gradle.api.internal.provenance.Attribution;
 import org.gradle.api.internal.provenance.ProvenanceCheckpoint;
 import org.gradle.internal.Describables;
 import org.gradle.api.internal.provenance.EffectiveProvenanceView;
+import org.gradle.api.internal.provenance.ProvenanceReadSnapshot;
 import org.gradle.api.internal.provenance.MutationOccurrence;
 import org.gradle.api.internal.provenance.OrdinaryProvenanceState;
 import org.gradle.api.internal.provenance.SemanticOperation;
@@ -77,6 +78,11 @@ public class AttributedProperty<T> extends DefaultProperty<T> implements Restora
     }
 
     /** Reading provenance never queries value presence or producer tasks. */
+    @Override
+    public ProvenanceReadSnapshot getProvenanceReadSnapshot() {
+        return provenance.readSnapshot(modelPath());
+    }
+
     @Override
     public EffectiveProvenanceView getEffectiveProvenance() {
         return provenance.getEffectiveProvenance(modelPath());

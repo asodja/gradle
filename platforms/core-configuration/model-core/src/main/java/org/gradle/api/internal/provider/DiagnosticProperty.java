@@ -18,13 +18,17 @@ package org.gradle.api.internal.provider;
 
 import org.gradle.api.Transformer;
 import org.gradle.api.internal.provenance.Attribution;
+import org.gradle.api.internal.provenance.EffectiveProvenanceView.ProviderBoundary;
 import org.gradle.api.internal.provenance.FailedOperation;
 import org.gradle.api.internal.provenance.OrdinaryProvenanceState;
 import org.gradle.api.internal.provenance.ProvenanceRenderer;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.provider.SupportsConvention;
+import org.gradle.api.specs.Spec;
 import org.jspecify.annotations.Nullable;
+
+import java.util.function.BiFunction;
 
 /** Opt-in, failure-only reporting adapter. Successful operations perform no diagnostic formatting. */
 public final class DiagnosticProperty<T> extends AttributedProperty<T> {
@@ -45,11 +49,7 @@ public final class DiagnosticProperty<T> extends AttributedProperty<T> {
 
     @Override
     protected Value<? extends T> calculateOwnPresentValue() {
-        try {
-            return super.calculateOwnPresentValue();
-        } catch (MissingValueException failure) {
-            throw PropertyProvenanceDiagnostics.missing(failure, getEffectiveProvenance());
-        }
+        return PropertyProvenanceDiagnostics.evaluate(this, super::calculateOwnPresentValue);
     }
 
     @Override
@@ -147,4 +147,88 @@ public final class DiagnosticProperty<T> extends AttributedProperty<T> {
             return failure;
         }
     }
+
+    @Override
+    public <S> ProviderInternal<S> map(Transformer<? extends @Nullable S, ? super T> transformer) {
+        return DiagnosticProvider.derived(super.map(transformer), this, ProviderBoundary.MAP);
+    }
+
+    @Override
+    public ProviderInternal<T> filter(Spec<? super T> spec) {
+        return DiagnosticProvider.derived(super.filter(spec), this, ProviderBoundary.FILTER);
+    }
+
+    @Override
+    public <S> Provider<S> flatMap(Transformer<? extends @Nullable Provider<? extends S>, ? super T> transformer) {
+        return DiagnosticProvider.derived(super.flatMap(transformer), this, ProviderBoundary.FLAT_MAP);
+    }
+
+    @Override
+    public Provider<T> orElse(T value) {
+        return DiagnosticProvider.derived(super.orElse(value), this, ProviderBoundary.OR_ELSE);
+    }
+
+    @Override
+    public Provider<T> orElse(Provider<? extends T> provider) {
+        return DiagnosticProvider.derived(super.orElse(provider), this, ProviderBoundary.OR_ELSE);
+    }
+
+    @Override
+    public <U, R> Provider<R> zip(Provider<U> right, BiFunction<? super T, ? super U, ? extends R> combiner) {
+        return DiagnosticProvider.derived(super.zip(right, combiner), this, ProviderBoundary.ZIP);
+    }
+
+    @Override
+    protected Value<? extends T> calculateOwnValue(ValueConsumer consumer) {
+        return PropertyProvenanceDiagnostics.evaluate(this, () -> super.calculateOwnValue(consumer));
+    }
+
+    @Override
+    public boolean calculatePresence(ValueConsumer consumer) {
+        return PropertyProvenanceDiagnostics.evaluate(this, () -> super.calculatePresence(consumer));
+    }
+
+    @Override
+    public ExecutionTimeValue<? extends T> calculateExecutionTimeValue() {
+        return PropertyProvenanceDiagnostics.evaluate(this, super::calculateExecutionTimeValue);
+    }
+
+    @Override
+    public ValueProducer getProducer() {
+        return PropertyProvenanceDiagnostics.evaluate(this, super::getProducer);
+    }
+
+    @Override
+    public void finalizeValue() {
+        PropertyProvenanceDiagnostics.evaluate(this, () -> {
+            super.finalizeValue();
+            return null;
+        });
+    }
+
+    @Override
+    public void setFromAnyValue(Object value) {
+        try {
+            super.setFromAnyValue(value);
+        } catch (RuntimeException failure) {
+            throw rejected(failure, "set");
+        }
+    }
+
+    @Override
+    public T get() {
+        return PropertyProvenanceDiagnostics.evaluate(this, super::get);
+    }
+
+    @Override
+    @Nullable
+    public T getOrNull() {
+        return PropertyProvenanceDiagnostics.evaluate(this, super::getOrNull);
+    }
+
+    @Override
+    public T getOrElse(T defaultValue) {
+        return PropertyProvenanceDiagnostics.evaluate(this, () -> super.getOrElse(defaultValue));
+    }
+
 }

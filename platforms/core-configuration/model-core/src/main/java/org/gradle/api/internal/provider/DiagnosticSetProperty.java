@@ -17,14 +17,17 @@
 package org.gradle.api.internal.provider;
 
 import org.gradle.api.Transformer;
-import org.gradle.api.internal.provider.CollectionPropertyProvenance.Operation;
+import org.gradle.api.internal.provenance.EffectiveProvenanceView.ProviderBoundary;
 import org.gradle.api.internal.provenance.EffectiveProvenanceView;
+import org.gradle.api.internal.provider.CollectionPropertyProvenance.Operation;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.provider.SupportsConvention;
+import org.gradle.api.specs.Spec;
 import org.gradle.internal.evaluation.EvaluationScopeContext;
 import org.jspecify.annotations.Nullable;
 
 import java.util.Set;
+import java.util.function.BiFunction;
 
 /** Opt-in collection attribution and failure reporting at the existing engine mutation boundaries. */
 public final class DiagnosticSetProperty<T> extends DefaultSetProperty<T> implements CollectionPropertyDiagnostics {
@@ -227,11 +230,7 @@ public final class DiagnosticSetProperty<T> extends DefaultSetProperty<T> implem
 
     @Override
     protected Value<? extends Set<T>> calculateOwnPresentValue() {
-        try {
-            return super.calculateOwnPresentValue();
-        } catch (MissingValueException failure) {
-            throw provenance.missing(failure, getDeclaredDisplayName());
-        }
+        return PropertyProvenanceDiagnostics.evaluate(this, super::calculateOwnPresentValue);
     }
 
     @Override
@@ -241,4 +240,115 @@ public final class DiagnosticSetProperty<T> extends DefaultSetProperty<T> implem
         provenance.finalized(checkpoint);
         return result;
     }
+
+    @Override
+    public <S> ProviderInternal<S> map(Transformer<? extends @Nullable S, ? super Set<T>> transformer) {
+        return DiagnosticProvider.derived(super.map(transformer), this, ProviderBoundary.MAP);
+    }
+
+    @Override
+    public ProviderInternal<Set<T>> filter(Spec<? super Set<T>> spec) {
+        return DiagnosticProvider.derived(super.filter(spec), this, ProviderBoundary.FILTER);
+    }
+
+    @Override
+    public <S> Provider<S> flatMap(Transformer<? extends @Nullable Provider<? extends S>, ? super Set<T>> transformer) {
+        return DiagnosticProvider.derived(super.flatMap(transformer), this, ProviderBoundary.FLAT_MAP);
+    }
+
+    @Override
+    public Provider<Set<T>> orElse(Set<T> value) {
+        return DiagnosticProvider.derived(super.orElse(value), this, ProviderBoundary.OR_ELSE);
+    }
+
+    @Override
+    public Provider<Set<T>> orElse(Provider<? extends Set<T>> provider) {
+        return DiagnosticProvider.derived(super.orElse(provider), this, ProviderBoundary.OR_ELSE);
+    }
+
+    @Override
+    public <U, R> Provider<R> zip(Provider<U> right, BiFunction<? super Set<T>, ? super U, ? extends R> combiner) {
+        return DiagnosticProvider.derived(super.zip(right, combiner), this, ProviderBoundary.ZIP);
+    }
+
+    @Override
+    protected Value<? extends Set<T>> calculateOwnValue(ValueConsumer consumer) {
+        return PropertyProvenanceDiagnostics.evaluate(this, () -> super.calculateOwnValue(consumer));
+    }
+
+    @Override
+    public boolean calculatePresence(ValueConsumer consumer) {
+        return PropertyProvenanceDiagnostics.evaluate(this, () -> super.calculatePresence(consumer));
+    }
+
+    @Override
+    public ExecutionTimeValue<? extends Set<T>> calculateExecutionTimeValue() {
+        return PropertyProvenanceDiagnostics.evaluate(this, super::calculateExecutionTimeValue);
+    }
+
+    @Override
+    public ValueProducer getProducer() {
+        return PropertyProvenanceDiagnostics.evaluate(this, super::getProducer);
+    }
+
+    @Override
+    public void finalizeValue() {
+        PropertyProvenanceDiagnostics.evaluate(this, () -> {
+            super.finalizeValue();
+            return null;
+        });
+    }
+
+    @Override
+    public void setFromAnyValue(Object value) {
+        try {
+            super.setFromAnyValue(value);
+        } catch (RuntimeException failure) {
+            throw provenance.rejected(failure, Operation.SET, getDeclaredDisplayName());
+        }
+    }
+
+    @Override
+    public void add(T value) {
+        try {
+            super.add(value);
+        } catch (RuntimeException failure) {
+            throw provenance.rejected(failure, Operation.ADD, getDeclaredDisplayName());
+        }
+    }
+
+    @Override
+    public void add(Provider<? extends T> value) {
+        try {
+            super.add(value);
+        } catch (RuntimeException failure) {
+            throw provenance.rejected(failure, Operation.ADD, getDeclaredDisplayName());
+        }
+    }
+
+    @Override
+    public void addAll(Provider<? extends Iterable<? extends T>> values) {
+        try {
+            super.addAll(values);
+        } catch (RuntimeException failure) {
+            throw provenance.rejected(failure, Operation.ADD_ALL, getDeclaredDisplayName());
+        }
+    }
+
+    @Override
+    public Set<T> get() {
+        return PropertyProvenanceDiagnostics.evaluate(this, super::get);
+    }
+
+    @Override
+    @Nullable
+    public Set<T> getOrNull() {
+        return PropertyProvenanceDiagnostics.evaluate(this, super::getOrNull);
+    }
+
+    @Override
+    public Set<T> getOrElse(Set<T> defaultValue) {
+        return PropertyProvenanceDiagnostics.evaluate(this, () -> super.getOrElse(defaultValue));
+    }
+
 }

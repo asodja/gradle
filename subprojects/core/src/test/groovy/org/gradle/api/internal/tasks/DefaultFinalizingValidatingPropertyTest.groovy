@@ -17,6 +17,10 @@
 package org.gradle.api.internal.tasks
 
 import org.gradle.api.internal.tasks.properties.DefaultFinalizingValidatingProperty
+import org.gradle.api.internal.tasks.properties.PropertyValidationContext
+import org.gradle.api.internal.provider.ProvenanceAware
+import org.gradle.api.internal.provenance.ProvenanceReadSnapshot
+import org.gradle.api.provider.Provider
 import org.gradle.api.internal.tasks.properties.LifecycleAwareValue
 import org.gradle.api.internal.tasks.properties.ValidationActions
 import org.gradle.internal.properties.PropertyValue
@@ -75,4 +79,33 @@ class DefaultFinalizingValidatingPropertyTest extends Specification {
         then:
         noExceptionThrown()
     }
+    def 'validation only captures required properties and materializes missing values optional=#optional present=#present'() {
+        given:
+        def provider = Mock(TrackedProvider)
+        def snapshot = Mock(ProvenanceReadSnapshot)
+        def valueWrapper = Stub(PropertyValue) { call() >> provider }
+        def context = Mock(PropertyValidationContext)
+        def target = new DefaultFinalizingValidatingProperty('name', valueWrapper, optional, ValidationActions.NO_OP)
+
+        when:
+        target.validate(context)
+
+        then:
+        (optional ? 0 : 1) * provider.getProvenanceReadSnapshot() >> snapshot
+
+        then:
+        1 * provider.isPresent() >> present
+
+        then:
+        (!optional && !present ? 1 : 0) * snapshot.toView()
+        (!optional && !present ? 1 : 0) * context.visitPropertyError(_)
+        0 * provider._
+        0 * snapshot._
+
+        where:
+        [optional, present] << [[false, true], [false, true]].combinations()
+    }
+
+    interface TrackedProvider extends Provider<String>, ProvenanceAware {}
+
 }

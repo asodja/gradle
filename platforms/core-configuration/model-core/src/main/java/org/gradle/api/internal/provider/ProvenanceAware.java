@@ -20,11 +20,17 @@ import org.gradle.api.internal.provenance.EffectiveProvenanceView;
 import org.gradle.api.internal.provenance.MutationOccurrence;
 import org.gradle.api.internal.provenance.ProvenanceCheckpoint;
 import org.gradle.api.internal.provenance.ProvenanceRenderer;
+import org.gradle.api.internal.provenance.ProvenanceReadSnapshot;
 import org.jspecify.annotations.Nullable;
 
 /** Read-only descriptor transport surface for diagnostic properties and captured providers. */
 public interface ProvenanceAware {
     EffectiveProvenanceView getEffectiveProvenance();
+
+    /** Captures current immutable descriptors, never a callback into mutable property state. */
+    default ProvenanceReadSnapshot getProvenanceReadSnapshot() {
+        return ProvenanceReadSnapshot.fromView(getEffectiveProvenance());
+    }
 
     default String getConfigurationTrace() {
         return ProvenanceRenderer.configuration(getEffectiveProvenance());

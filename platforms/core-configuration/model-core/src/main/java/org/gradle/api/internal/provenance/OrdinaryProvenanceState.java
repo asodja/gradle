@@ -59,6 +59,12 @@ public final class OrdinaryProvenanceState {
         return lastAcceptedMutation;
     }
 
+    public ProvenanceReadSnapshot readSnapshot(String modelPath) {
+        return finalizedProvenance == null
+            ? ProvenanceReadSnapshot.captured(ownerScope, modelPath, source, updates, convention)
+            : ProvenanceReadSnapshot.fromView(finalizedProvenance);
+    }
+
     public EffectiveProvenanceView getEffectiveProvenance(String modelPath) {
         return finalizedProvenance == null
             ? EffectiveProvenanceView.captured(new TargetContext(ownerScope, modelPath), source, updates, convention) : finalizedProvenance;

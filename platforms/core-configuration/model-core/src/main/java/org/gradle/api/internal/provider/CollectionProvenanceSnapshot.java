@@ -16,18 +16,24 @@
 
 package org.gradle.api.internal.provider;
 
+import org.gradle.api.Transformer;
+import org.gradle.api.internal.provenance.EffectiveProvenanceView.ProviderBoundary;
 import org.gradle.api.internal.provenance.EffectiveProvenanceView;
-import org.gradle.api.internal.provenance.ProvenanceRenderer;
+import org.gradle.api.internal.provenance.ProvenanceReadSnapshot;
+import org.gradle.api.internal.provenance.MutationOccurrence;
 import org.gradle.api.internal.provenance.OrdinaryProvenanceState;
+import org.gradle.api.internal.provenance.ProvenanceRenderer;
 import org.gradle.api.internal.provenance.ScopeIdentity;
 import org.gradle.api.internal.provenance.TargetContext;
 import org.gradle.api.internal.provenance.UpdateSequence;
-import org.gradle.api.internal.provenance.MutationOccurrence;
-import org.jspecify.annotations.Nullable;
+import org.gradle.api.provider.Provider;
+import org.gradle.api.specs.Spec;
 import org.gradle.internal.evaluation.EvaluationScopeContext;
+import org.jspecify.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.function.BiFunction;
 
 /** Captured collection supplier and descriptor view; further source rebinding does not alter either. */
 public abstract class CollectionProvenanceSnapshot<C> extends AbstractMinimalProvider<C> implements ProvenanceAware {
@@ -57,6 +63,11 @@ public abstract class CollectionProvenanceSnapshot<C> extends AbstractMinimalPro
     }
 
     @Override
+    public ProvenanceReadSnapshot getProvenanceReadSnapshot() {
+        return ProvenanceReadSnapshot.captured(owner, modelPath, source, updates, convention);
+    }
+
+    @Override
     public EffectiveProvenanceView getEffectiveProvenance() {
         return EffectiveProvenanceView.captured(new TargetContext(owner, modelPath), source, updates, convention);
     }
@@ -73,11 +84,7 @@ public abstract class CollectionProvenanceSnapshot<C> extends AbstractMinimalPro
 
     @Override
     protected Value<? extends C> calculateOwnPresentValue() {
-        try {
-            return super.calculateOwnPresentValue();
-        } catch (MissingValueException failure) {
-            throw PropertyProvenanceDiagnostics.missing(failure, getEffectiveProvenance());
-        }
+        return PropertyProvenanceDiagnostics.evaluate(this, super::calculateOwnPresentValue);
     }
 
     private static final class CollectionSnapshot<T, C extends Collection<T>> extends CollectionProvenanceSnapshot<C> {
@@ -91,21 +98,21 @@ public abstract class CollectionProvenanceSnapshot<C> extends AbstractMinimalPro
         @Override
         public ValueProducer getProducer() {
             try (EvaluationScopeContext ignored = openScope()) {
-                return supplier.getProducer();
+                return PropertyProvenanceDiagnostics.evaluate(this, supplier::getProducer);
             }
         }
 
         @Override
         public ExecutionTimeValue<? extends C> calculateExecutionTimeValue() {
             try (EvaluationScopeContext ignored = openScope()) {
-                return supplier.calculateExecutionTimeValue();
+                return PropertyProvenanceDiagnostics.evaluate(this, supplier::calculateExecutionTimeValue);
             }
         }
 
         @Override
         protected Value<? extends C> calculateOwnValue(ValueConsumer consumer) {
             try (EvaluationScopeContext ignored = openScope()) {
-                return supplier.calculateValue(consumer);
+                return PropertyProvenanceDiagnostics.evaluate(this, () -> supplier.calculateValue(consumer));
             }
         }
     }
@@ -121,22 +128,69 @@ public abstract class CollectionProvenanceSnapshot<C> extends AbstractMinimalPro
         @Override
         public ValueProducer getProducer() {
             try (EvaluationScopeContext ignored = openScope()) {
-                return supplier.getProducer();
+                return PropertyProvenanceDiagnostics.evaluate(this, supplier::getProducer);
             }
         }
 
         @Override
         public ExecutionTimeValue<? extends Map<K, V>> calculateExecutionTimeValue() {
             try (EvaluationScopeContext ignored = openScope()) {
-                return supplier.calculateExecutionTimeValue();
+                return PropertyProvenanceDiagnostics.evaluate(this, supplier::calculateExecutionTimeValue);
             }
         }
 
         @Override
         protected Value<? extends Map<K, V>> calculateOwnValue(ValueConsumer consumer) {
             try (EvaluationScopeContext ignored = openScope()) {
-                return supplier.calculateValue(consumer);
+                return PropertyProvenanceDiagnostics.evaluate(this, () -> supplier.calculateValue(consumer));
             }
         }
     }
+
+    @Override
+    public <S> ProviderInternal<S> map(Transformer<? extends @Nullable S, ? super C> transformer) {
+        return DiagnosticProvider.derived(super.map(transformer), this, ProviderBoundary.MAP);
+    }
+
+    @Override
+    public ProviderInternal<C> filter(Spec<? super C> spec) {
+        return DiagnosticProvider.derived(super.filter(spec), this, ProviderBoundary.FILTER);
+    }
+
+    @Override
+    public <S> Provider<S> flatMap(Transformer<? extends @Nullable Provider<? extends S>, ? super C> transformer) {
+        return DiagnosticProvider.derived(super.flatMap(transformer), this, ProviderBoundary.FLAT_MAP);
+    }
+
+    @Override
+    public Provider<C> orElse(C value) {
+        return DiagnosticProvider.derived(super.orElse(value), this, ProviderBoundary.OR_ELSE);
+    }
+
+    @Override
+    public Provider<C> orElse(Provider<? extends C> provider) {
+        return DiagnosticProvider.derived(super.orElse(provider), this, ProviderBoundary.OR_ELSE);
+    }
+
+    @Override
+    public <U, R> Provider<R> zip(Provider<U> right, BiFunction<? super C, ? super U, ? extends R> combiner) {
+        return DiagnosticProvider.derived(super.zip(right, combiner), this, ProviderBoundary.ZIP);
+    }
+
+    @Override
+    public C get() {
+        return PropertyProvenanceDiagnostics.evaluate(this, super::get);
+    }
+
+    @Override
+    @Nullable
+    public C getOrNull() {
+        return PropertyProvenanceDiagnostics.evaluate(this, super::getOrNull);
+    }
+
+    @Override
+    public C getOrElse(C defaultValue) {
+        return PropertyProvenanceDiagnostics.evaluate(this, () -> super.getOrElse(defaultValue));
+    }
+
 }

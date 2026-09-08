@@ -18,28 +18,35 @@ package org.gradle.api.internal.provider;
 
 import org.gradle.api.Transformer;
 import org.gradle.api.internal.provenance.EffectiveProvenanceView.ProviderBoundary;
-import org.gradle.api.internal.provenance.OrdinaryProvenanceState;
-import org.gradle.api.internal.provenance.ProvenanceRenderer;
+import org.gradle.api.internal.provenance.EffectiveProvenanceView;
+import org.gradle.api.internal.provenance.ProvenanceReadSnapshot;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.specs.Spec;
 import org.jspecify.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.function.BiFunction;
 
-/** Missing-value reporting for a captured supplier, without retaining its property or mutable state. */
-public final class DiagnosticProvenanceSnapshot<T> extends ProvenanceSnapshot<T> {
-    DiagnosticProvenanceSnapshot(Class<T> type, ProviderInternal<? extends T> supplier, OrdinaryProvenanceState state, String modelPath) {
-        super(type, supplier, state, modelPath);
+/** Opt-in context for a derived provider; the delegate remains the only evaluator. */
+final class DiagnosticProvider<T> extends AbstractMinimalProvider<T> implements ProvenanceAware {
+    private final ProviderInternal<T> delegate;
+    private final ProvenanceAware source;
+    private final ProviderBoundary boundary;
+
+    private DiagnosticProvider(ProviderInternal<T> delegate, ProvenanceAware source, ProviderBoundary boundary) {
+        this.delegate = delegate;
+        this.source = source;
+        this.boundary = boundary;
     }
 
-    @Override
-    public String getConfigurationTrace() {
-        return ProvenanceRenderer.configuration(getEffectiveProvenance());
+    static <T> ProviderInternal<T> derived(Provider<T> delegate, ProvenanceAware source, ProviderBoundary boundary) {
+        return new DiagnosticProvider<>(Providers.internal(delegate), source, boundary);
     }
 
-    @Override
-    protected Value<? extends T> calculateOwnPresentValue() {
-        return PropertyProvenanceDiagnostics.evaluate(this, super::calculateOwnPresentValue);
+    ProviderInternal<T> getDelegate() {
+        return delegate;
     }
 
     @Override
@@ -73,23 +80,53 @@ public final class DiagnosticProvenanceSnapshot<T> extends ProvenanceSnapshot<T>
     }
 
     @Override
-    protected Value<? extends T> calculateOwnValue(ValueConsumer consumer) {
-        return PropertyProvenanceDiagnostics.evaluate(this, () -> super.calculateOwnValue(consumer));
+    public EffectiveProvenanceView getEffectiveProvenance() {
+        return getProvenanceReadSnapshot().toView();
     }
 
     @Override
-    public boolean calculatePresence(ValueConsumer consumer) {
-        return PropertyProvenanceDiagnostics.evaluate(this, () -> super.calculatePresence(consumer));
+    public ProvenanceReadSnapshot getProvenanceReadSnapshot() {
+        List<ProviderBoundary> boundaries = new ArrayList<>();
+        boundaries.add(boundary);
+        ProvenanceAware input = source;
+        while (input instanceof DiagnosticProvider) {
+            DiagnosticProvider<?> derived = (DiagnosticProvider<?>) input;
+            boundaries.add(derived.boundary);
+            input = derived.source;
+        }
+        Collections.reverse(boundaries);
+        return input.getProvenanceReadSnapshot().through(boundaries);
     }
 
     @Override
-    public ExecutionTimeValue<? extends T> calculateExecutionTimeValue() {
-        return PropertyProvenanceDiagnostics.evaluate(this, super::calculateExecutionTimeValue);
+    @Nullable
+    public Class<T> getType() {
+        return delegate.getType();
     }
 
     @Override
     public ValueProducer getProducer() {
-        return PropertyProvenanceDiagnostics.evaluate(this, super::getProducer);
+        return PropertyProvenanceDiagnostics.evaluate(this, delegate::getProducer);
+    }
+
+    @Override
+    public boolean calculatePresence(ValueConsumer consumer) {
+        return PropertyProvenanceDiagnostics.evaluate(this, () -> delegate.calculatePresence(consumer));
+    }
+
+    @Override
+    public ExecutionTimeValue<? extends T> calculateExecutionTimeValue() {
+        return PropertyProvenanceDiagnostics.evaluate(this, delegate::calculateExecutionTimeValue);
+    }
+
+    @Override
+    protected Value<? extends T> calculateOwnValue(ValueConsumer consumer) {
+        return PropertyProvenanceDiagnostics.evaluate(this, () -> delegate.calculateValue(consumer));
+    }
+
+    @Override
+    protected Value<? extends T> calculateOwnPresentValue() {
+        return PropertyProvenanceDiagnostics.evaluate(this, super::calculateOwnPresentValue);
     }
 
     @Override

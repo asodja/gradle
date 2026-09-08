@@ -17,6 +17,7 @@
 package org.gradle.api.internal.provider;
 
 import org.gradle.api.internal.provenance.EffectiveProvenanceView;
+import org.gradle.api.internal.provenance.ProvenanceReadSnapshot;
 import org.gradle.api.internal.provenance.MutationOccurrence;
 import org.gradle.api.internal.provenance.ProvenanceRenderer;
 import org.gradle.api.internal.provenance.ProvenanceCheckpoint;
@@ -40,6 +41,11 @@ public interface CollectionPropertyDiagnostics extends RestorableProvenance {
             ((AbstractProperty<?, ?>) this).attachOwner(null, Describables.of(modelPath));
         }
         getProvenance().restoring = false;
+    }
+
+    @Override
+    default ProvenanceReadSnapshot getProvenanceReadSnapshot() {
+        return getProvenance().state.readSnapshot(CollectionPropertyProvenance.modelPath(((AbstractProperty<?, ?>) this).getDeclaredDisplayName()));
     }
 
     @Override

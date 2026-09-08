@@ -45,6 +45,21 @@ public final class ProvenanceRenderer {
         if (failedOperation != null) {
             frame(result, "failed " + label(failedOperation.getOperation()), failedOperation.getAttribution());
         }
+        if (!view.getProviderBoundaries().isEmpty()) {
+            result.append("Provider boundaries (partial coverage; no branch selection or failure causality inferred):\n");
+            int count = 0;
+            for (EffectiveProvenanceView.ProviderBoundary boundary : view.getProviderBoundaries()) {
+                if (count++ == DETAIL_LIMIT) {
+                    result.append("    ... additional provider boundaries omitted\n");
+                    break;
+                }
+                result.append("    through ").append(boundary.name().toLowerCase(java.util.Locale.ROOT)).append('\n');
+            }
+            if (view.getProviderBoundaries().contains(EffectiveProvenanceView.ProviderBoundary.MAP_ENTRY)) {
+                result.append("    A missing entry can mean an absent key or an absent map; key ownership is not inferred.\n");
+            }
+            result.append("Known input configuration (not a selected derived source):\n");
+        }
         Iterator<MutationOccurrence> updates = view.getUpdates().reverseIterator();
         int shown = 0;
         while (shown < UPDATE_LIMIT && updates.hasNext()) {
@@ -79,7 +94,7 @@ public final class ProvenanceRenderer {
                 frame(result, binding.getOperation().getKind() == SemanticOperation.Kind.CONVENTION_BINDING ? "convention" : "binding", binding.getAttribution());
             }
         }
-        if (!view.isCompleteLocal()) {
+        if (!view.getPartialReasons().isEmpty()) {
             result.append("Partial local provenance:\n");
             int count = 0;
             for (String reason : view.getPartialReasons()) {
