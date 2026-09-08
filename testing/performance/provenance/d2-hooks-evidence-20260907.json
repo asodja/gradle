@@ -1,0 +1,83 @@
+{
+  "parentCommit": "37d47151c7bacf17cabc761acbb7ee7b5eb48e96",
+  "roadmapRevision": "d71ed7bafde06b54faa1810b64f563c41616ddb0",
+  "sourceAndArtifactHashes": {
+    "PROPERTY_PROVENANCE_ARCHITECTURE.md": "86625cac614df7899ac34cdf06e7dd14057dce291638eb05246bb222d68ca29e",
+    "PROPERTY_PROVENANCE_COLLECTION_HOOKS.md": "a6d2861eaf941399f27cdcfbf0a6607af500c0cd13264ba45b584dbe4de7214b",
+    "PROPERTY_PROVENANCE_D2.md": "a969a3062d8919961521b9bb147014472c4e41d84fecfe03da02951dad34b0c3",
+    "platforms/core-configuration/model-core/src/main/java/org/gradle/api/internal/provider/CollectionPropertyDiagnostics.java": "32b502c9a4b8cf4a1d862e6e742896d7d6c4e44bcb68c63f1dbc05d25267080d",
+    "platforms/core-configuration/model-core/src/main/java/org/gradle/api/internal/provider/CollectionPropertyProvenance.java": "55025aa6f029cff0ced34a81a9e35486529ddd61801ec8c70f05228f9ef62072",
+    "platforms/core-configuration/model-core/src/main/java/org/gradle/api/internal/provider/DiagnosticListProperty.java": "b87b03812d202b16871800432eb267a5c8ea12eba137fd441d3508e3b8fbd106",
+    "platforms/core-configuration/model-core/src/main/java/org/gradle/api/internal/provider/DiagnosticMapProperty.java": "a9596e64bc35ab19cf7eaf7cd42e842aedc4b8d9a9f1f01b2059671bb1bf7653",
+    "platforms/core-configuration/model-core/src/main/java/org/gradle/api/internal/provider/DiagnosticSetProperty.java": "e9f6a985faf25d6a42244ece558b590cb9280a436b737da5fe3087ab13d7b1cb",
+    "platforms/core-configuration/model-core/src/test/groovy/org/gradle/api/internal/provider/DiagnosticCollectionPropertyTest.groovy": "442aaa9c5deb1d0a483fb6f16d5275d46e277949b2cde649d37bed93d0a1e5ac",
+    "testing/performance/provenance/d2-hooks-probe-20260907.json": "f1df799cef1616a77f170d14b935dc399504136ca327cb3d30d17f95df0447f5",
+    "testing/performance/provenance/run-collection-probe.py": "e75e96d9adb60918361044b39c0b4aa1e05e4cd55b0b1ae73f3db8ccfdde5c41"
+  },
+  "compiledClassHashes": {
+    "platforms/core-configuration/model-core/build/classes/java/main/org/gradle/api/internal/provider/DefaultPropertyFactory.class": "f42be11dfc0ef9ae8c2562d40ce7643f305ac738c1a7cfe8cfe02e05f5373b63",
+    "platforms/core-configuration/model-core/build/classes/java/main/org/gradle/api/internal/provider/AbstractProperty.class": "d77729262d09900280f03c6bf2b305f3815284e6d933ce315ed0496753c12ca6",
+    "platforms/core-configuration/model-core/build/classes/java/main/org/gradle/api/internal/provider/CollectionPropertyDiagnostics.class": "7a6152a0e0eeeafd329f485b18a201360ec02249d00ea809d02a34bce2679577",
+    "platforms/core-configuration/model-core/build/classes/java/main/org/gradle/api/internal/provider/AbstractCollectionProperty.class": "bf6a3df582cf217bdf952b5d54060f8a7f553cc45ceee0df9bd75378975dd2e4",
+    "platforms/core-configuration/model-core/build/classes/java/main/org/gradle/api/internal/provider/DefaultMapProperty.class": "693f133e4c7c135bb77dd2debe72e704b7cc13d36c83bd5147a78b81a7e1ad52",
+    "platforms/core-configuration/model-core/build/classes/java/main/org/gradle/api/internal/provider/DiagnosticListProperty.class": "56a619537ccf4c6b28b136e5ae067fb88e25503aad3a981e1324311cc4f0bf1a",
+    "platforms/core-configuration/model-core/build/classes/java/main/org/gradle/api/internal/provider/DiagnosticSetProperty.class": "35e59016ddce8ee9f7007c87ba451aae5d39b1734ed9f753b593f003c76e2c60",
+    "platforms/core-configuration/model-core/build/classes/java/main/org/gradle/api/internal/provider/DiagnosticMapProperty.class": "ec2238f5b1189d66e7a12a18b31c31d3cb3b77f777922d0d8560e1e705da95ee",
+    "platforms/core-configuration/model-core/build/classes/java/main/org/gradle/api/internal/provider/CollectionPropertyProvenance.class": "ab9c5ff537b59aa4fc99c15ebd607c46209eee774547b591e4088958bb18433c",
+    "platforms/core-configuration/model-core/build/classes/java/main/org/gradle/api/internal/provider/CollectionProvenanceSnapshot.class": "475396176e7a3d674bd62161336a41bc282b53ce2c0d3458625ccf18a2b90091",
+    "platforms/core-configuration/model-core/build/classes/java/main/org/gradle/api/internal/provider/PropertyUpdateClassifier.class": "6aedf7a0b72989020bdba54fea27f562590e98ef54924a47783867d7434c2e13",
+    "platforms/core-configuration/model-core/build/classes/java/main/org/gradle/api/internal/provider/PropertyProvenanceDiagnostics.class": "1ba5b1df096d6e226cecdc0c9d260b370bd5f6c7e844fb0a15f1cbfe19693ec4",
+    "platforms/core-configuration/model-core/build/classes/java/main/org/gradle/api/internal/provider/CollectionPropertyProvenance$Operation.class": "51751b3f153d9d5628e9b3f5a80bb508102c82964b9d18ce378f2bc2a7814cb8"
+  },
+  "tests": {
+    "test": {
+      "totals": {
+        "tests": 2165,
+        "failures": 0,
+        "errors": 0
+      },
+      "suites": {
+        "org.gradle.api.internal.provider.DiagnosticPropertyTest": 26,
+        "org.gradle.api.internal.provider.DiagnosticCollectionPropertyTest$SetCircularEvaluationTest": 56,
+        "org.gradle.api.internal.provider.AttributedDefaultPropertyTest": 230,
+        "org.gradle.api.internal.provider.DefaultListPropertyTest$ListPropertyCircularFunctionEvaluationTest": 56,
+        "org.gradle.api.internal.provider.DefaultPropertyTest": 230,
+        "org.gradle.api.internal.provider.DefaultSetPropertyTest$SetPropertyCircularFunctionEvaluationTest": 56,
+        "org.gradle.api.internal.provenance.SharedProvenanceContractTest": 35,
+        "org.gradle.api.internal.provider.DefaultSetPropertyTest": 333,
+        "org.gradle.api.internal.provider.EffectivePropertyProvenanceTest": 18,
+        "org.gradle.api.internal.provider.DiagnosticCollectionPropertyTest$MapCircularEvaluationTest": 160,
+        "org.gradle.api.internal.provenance.ProvenanceRendererTest": 9,
+        "org.gradle.api.internal.provider.MapPropertySpec": 314,
+        "org.gradle.api.internal.provider.DiagnosticCollectionPropertyTest$ListCircularEvaluationTest": 56,
+        "org.gradle.api.internal.provider.DefaultListPropertyTest": 332,
+        "org.gradle.api.internal.provider.DiagnosticCollectionPropertyTest": 68,
+        "org.gradle.api.internal.provenance.OrdinaryProvenanceStateTest": 7,
+        "org.gradle.api.internal.provider.MapPropertySpec$MapPropertyCircularChainEvaluationTest": 160,
+        "org.gradle.api.internal.provider.AttributedPropertyTest": 19
+      }
+    },
+    "embeddedIntegTest": {
+      "totals": {
+        "tests": 28,
+        "failures": 0,
+        "errors": 0
+      },
+      "suites": {
+        "org.gradle.api.provider.PropertyAttributionIntegrationTest": 11,
+        "org.gradle.api.provider.CollectionPropertyProvenanceIntegrationTest": 7,
+        "org.gradle.api.provider.PropertyProvenanceDiagnosticsIntegrationTest": 10
+      }
+    }
+  },
+  "engineDiagnosticsBoundary": {
+    "AbstractProperty": "no diagnostic or provenance references",
+    "AbstractCollectionProperty": "no diagnostic or provenance references",
+    "DefaultMapProperty": "no diagnostic or provenance references"
+  },
+  "validationScans": [
+    "https://ge.gradle.org/s/ny64lsgn5qe3i",
+    "https://ge.gradle.org/s/2cuhw4zasa7cm"
+  ],
+  "note": "All diagnostic control flow resides in diagnostic subclasses and their helper. D3 not started. Allocation/retention evidence is not a runtime overhead guarantee."
+}

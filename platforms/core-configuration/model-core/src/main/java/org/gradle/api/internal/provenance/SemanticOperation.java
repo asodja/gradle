@@ -26,8 +26,8 @@ import java.util.Objects;
  * An unclassified binding is never evidence of a non-self replacement or contributor authority.
  */
 public final class SemanticOperation {
-    public enum Kind { EXPLICIT_BINDING, CONVENTION_BINDING, UPDATE, CLEAR_EXPLICIT, CLEAR_CONVENTION, PROMOTE_CONVENTION, UNCLASSIFIED_BINDING }
-    public enum Shape { MAP, FLAT_MAP, ZIP, APPEND, REMOVE }
+    public enum Kind { EXPLICIT_BINDING, CONVENTION_BINDING, UPDATE, CONTRIBUTION, CLEAR_EXPLICIT, CLEAR_CONVENTION, PROMOTE_CONVENTION, UNCLASSIFIED_BINDING }
+    public enum Shape { MAP, FLAT_MAP, ZIP, APPEND, REMOVE, ADD, ADD_ALL, APPEND_ALL, PUT, PUT_ALL, INSERT, INSERT_ALL }
 
     public static final SemanticOperation EXPLICIT_BINDING = new SemanticOperation(Kind.EXPLICIT_BINDING, Collections.emptyList(), "");
     public static final SemanticOperation CONVENTION_BINDING = new SemanticOperation(Kind.CONVENTION_BINDING, Collections.emptyList(), "");
@@ -55,6 +55,11 @@ public final class SemanticOperation {
             Objects.requireNonNull(shape);
         }
         return new SemanticOperation(Kind.UPDATE, Collections.unmodifiableList(Arrays.asList(copy)), "");
+    }
+
+    /** One accepted collection contribution, independent of the number of supplied elements or keys. */
+    public static SemanticOperation contribution(Shape shape) {
+        return new SemanticOperation(Kind.CONTRIBUTION, Collections.singletonList(Objects.requireNonNull(shape)), "");
     }
 
     public static SemanticOperation unclassifiedBinding(String reason) {

@@ -16,6 +16,13 @@
 
 # Property provenance: package boundaries and review guide
 
+For the subsequent consolidation within the diagnostic collection adapters, see
+[the collection diagnostic adapters checkpoint](PROPERTY_PROVENANCE_COLLECTION_HOOKS.md).
+
+For the current roadmap numbering and collection implementation, see
+[the D2 collection checkpoint](PROPERTY_PROVENANCE_D2.md). Earlier milestone numbers
+below describe the historical checkpoint; transport is now D3.
+
 This refactor follows S3 commit `af6f959a4f5`. It separates the provider-independent
 provenance model and ordinary state transitions from the property/provider adapter.
 It does not implement D1 or change ordinary property semantics.

@@ -317,6 +317,28 @@ class SharedProvenanceContractTest extends Specification {
         descriptorGraphOnly(restored)
     }
 
+    def 'collection default and contribution checkpoint round trip is descriptor only missing=#missing'() {
+        given:
+        def occurrence = new MutationOccurrence('collection', 1, a.attribution, contribution(Shape.ADD_ALL))
+        def original = EffectiveProvenanceView.captured(TARGET, Source.collectionDefault(missing), UpdateSequence.empty().append(occurrence), c)
+        def bytes = new ByteArrayOutputStream()
+        writeView(new DataOutputStream(bytes), original)
+
+        when:
+        def restored = readView(new DataInputStream(new ByteArrayInputStream(bytes.toByteArray())))
+
+        then:
+        restored.source.reason == original.source.reason
+        restored.source.knowledge == original.source.knowledge
+        restored.updates.inApplicationOrder() == [occurrence]
+        restored.updates.inApplicationOrder()[0].operation.kind == Kind.CONTRIBUTION
+        restored.shadowedConfiguration == [c]
+        descriptorGraphOnly(restored)
+
+        where:
+        missing << [false, true]
+    }
+
     def 'descriptor round trip preserves every semantic operation and absent application detail'() {
         given:
         def attribution = new Attribution(a.attribution.contributor, a.attribution.origin, PROJECT, null)
@@ -337,7 +359,9 @@ class SharedProvenanceContractTest extends Specification {
 
         where:
         operation << [EXPLICIT_BINDING, CONVENTION_BINDING, CLEAR_EXPLICIT, CLEAR_CONVENTION, PROMOTE_CONVENTION,
-                      unclassifiedBinding('opaque'), update(Shape.MAP, Shape.FLAT_MAP, Shape.ZIP, Shape.APPEND, Shape.REMOVE)]
+                      unclassifiedBinding('opaque'), update(Shape.MAP, Shape.FLAT_MAP, Shape.ZIP, Shape.APPEND, Shape.REMOVE),
+                      contribution(Shape.ADD), contribution(Shape.ADD_ALL), contribution(Shape.PUT), contribution(Shape.PUT_ALL),
+                      contribution(Shape.APPEND), contribution(Shape.APPEND_ALL), contribution(Shape.INSERT), contribution(Shape.INSERT_ALL)]
     }
 
     def 'a root occurrence cannot also appear as shadowed even through a descriptor copy'() {
@@ -424,7 +448,7 @@ class SharedProvenanceContractTest extends Specification {
         }
     }
 
-    // A deliberately test-only descriptor wire adapter. Production transport belongs to D4, not S1.
+    // A deliberately test-only descriptor wire adapter. Production scalar/collection transport belongs to D3, not this test codec.
     private static void writeView(DataOutputStream out, EffectiveProvenanceView view) {
         [view.target.owner.buildIdentity, view.target.owner.scopePath, view.target.modelPath,
          view.rootKind.name(), view.source.selection.name(), view.source.knowledge.name(), view.source.reason].each { out.writeUTF(it) }
@@ -447,7 +471,8 @@ class SharedProvenanceContractTest extends Specification {
         def reason = input.readUTF()
         def selected = knowledge == KNOWN ? Source.known(selection, readOccurrence(input)) :
             knowledge == UNCONFIGURED ? Source.unconfigured() :
-                knowledge == UNATTRIBUTED ? Source.unattributed(selection) : Source.unavailable(selection, reason)
+                knowledge == UNATTRIBUTED ? Source.unattributed(selection) :
+                    knowledge == EffectiveProvenanceView.SourceKnowledge.DEFAULT ? Source.collectionDefault(reason == 'missing collection') : Source.unavailable(selection, reason)
         def updates = UpdateSequence.empty()
         input.readInt().times { updates = updates.append(readOccurrence(input)) }
         def shadowed = (0..<input.readInt()).collect { readOccurrence(input) }
@@ -482,7 +507,7 @@ class SharedProvenanceContractTest extends Specification {
         def kind = Kind.valueOf(input.readUTF())
         def reason = input.readUTF()
         def shapes = (0..<input.readInt()).collect { Shape.valueOf(input.readUTF()) } as Shape[]
-        def operation = kind == Kind.UPDATE ? update(shapes) : kind == Kind.UNCLASSIFIED_BINDING ? unclassifiedBinding(reason) :
+        def operation = kind == Kind.CONTRIBUTION ? contribution(shapes[0]) : kind == Kind.UPDATE ? update(shapes) : kind == Kind.UNCLASSIFIED_BINDING ? unclassifiedBinding(reason) :
             [EXPLICIT_BINDING, CONVENTION_BINDING, CLEAR_EXPLICIT, CLEAR_CONVENTION, PROMOTE_CONVENTION].find { it.kind == kind }
         new MutationOccurrence(scope, id, attribution, operation)
     }

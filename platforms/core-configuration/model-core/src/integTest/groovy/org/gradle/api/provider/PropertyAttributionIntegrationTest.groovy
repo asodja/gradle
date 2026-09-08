@@ -284,7 +284,7 @@ class PropertyAttributionIntegrationTest extends AbstractIntegrationSpec {
         outputContains('enabled-file|DefaultRegularFileVar')
     }
 
-    def 'disabled scalar and enabled collection factories preserve ordinary classes and messages'() {
+    def 'disabled scalar and collection factories preserve ordinary classes and messages'() {
         given:
         buildFile << '''
             def value = objects.property(String)

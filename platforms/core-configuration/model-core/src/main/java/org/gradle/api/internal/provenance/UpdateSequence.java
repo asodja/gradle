@@ -57,7 +57,8 @@ public final class UpdateSequence {
 
     /** Appends a fact already accepted by the owner; this method performs no authorization. */
     public UpdateSequence append(MutationOccurrence occurrence) {
-        if (occurrence.getOperation().getKind() != SemanticOperation.Kind.UPDATE) {
+        if (occurrence.getOperation().getKind() != SemanticOperation.Kind.UPDATE
+            && occurrence.getOperation().getKind() != SemanticOperation.Kind.CONTRIBUTION) {
             throw new IllegalArgumentException("Only local structural updates belong in an update sequence.");
         }
         return new UpdateSequence(this, occurrence);

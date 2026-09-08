@@ -123,6 +123,20 @@ public final class OrdinaryProvenanceState {
         updates = capturedUpdates.append(occurrence);
     }
 
+    /** Records an accepted collection operation; an absorbing missing supplier may discard its contribution. */
+    public void acceptedContribution(Attribution attribution, SemanticOperation operation, boolean retained) {
+        MutationOccurrence occurrence = accepted(attribution, operation);
+        if (retained) {
+            updates = updates.append(occurrence);
+        }
+    }
+
+    /** Selects the source chosen by the collection engine, without inventing a separate mutation. */
+    public void selectCollectionSource(EffectiveProvenanceView.Source selected) {
+        source = selected;
+        updates = UpdateSequence.empty();
+    }
+
     /** Called only after successful value finalization; the checkpoint precedes value calculation. */
     public void freeze(EffectiveProvenanceView checkpoint) {
         finalizedProvenance = checkpoint;

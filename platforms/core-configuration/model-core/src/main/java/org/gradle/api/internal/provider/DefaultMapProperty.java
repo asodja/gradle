@@ -213,25 +213,25 @@ public class DefaultMapProperty<K, V> extends AbstractProperty<Map<K, V>, MapSup
 
     @Override
     public void insert(K key, Provider<? extends V> providerOfValue) {
-        withActualValue(() -> put(key, providerOfValue));
+        withActualValue(() -> put(key, providerOfValue), false);
     }
 
     @Override
     public void insert(K key, V value) {
-        withActualValue(() -> put(key, value));
+        withActualValue(() -> put(key, value), false);
     }
 
     @Override
     public void insertAll(Provider<? extends Map<? extends K, ? extends V>> provider) {
-        withActualValue(() -> putAll(provider));
+        withActualValue(() -> putAll(provider), true);
     }
 
     @Override
     public void insertAll(Map<? extends K, ? extends V> entries) {
-        withActualValue(() -> putAll(entries));
+        withActualValue(() -> putAll(entries), true);
     }
 
-    private void addExplicitCollector(MapCollector<K, V> collector) {
+    protected void addExplicitCollector(MapCollector<K, V> collector) {
         assertCanMutate();
         setSupplier(withAppendedValue(collector));
     }
@@ -245,12 +245,12 @@ public class DefaultMapProperty<K, V> extends AbstractProperty<Map<K, V>, MapSup
         }
     }
 
-    protected void withActualValue(Runnable action) {
+    protected void withActualValue(Runnable action, boolean bulk) {
         setToConventionIfUnset();
         action.run();
     }
 
-    private boolean isNoValueSupplier(MapSupplier<K, V> valueSupplier) {
+    protected boolean isNoValueSupplier(MapSupplier<K, V> valueSupplier) {
         return valueSupplier instanceof DefaultMapProperty.NoValueSupplier;
     }
 

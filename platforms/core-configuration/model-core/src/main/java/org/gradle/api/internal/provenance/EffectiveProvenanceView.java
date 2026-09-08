@@ -29,8 +29,8 @@ import java.util.Objects;
  * A live convention root must be resolved by the owner again at each checkpoint, not frozen by reusing a view.
  */
 public final class EffectiveProvenanceView {
-    public enum SourceSelection { EXPLICIT, CONVENTION, UNCONFIGURED, UNKNOWN }
-    public enum SourceKnowledge { KNOWN, UNATTRIBUTED, UNCONFIGURED, UNAVAILABLE }
+    public enum SourceSelection { EXPLICIT, CONVENTION, UNCONFIGURED, UNKNOWN, DEFAULT }
+    public enum SourceKnowledge { KNOWN, UNATTRIBUTED, UNCONFIGURED, UNAVAILABLE, DEFAULT }
     public enum RootKind { CAPTURED, LIVE_CONVENTION }
 
     /** Selected source metadata, independent of whether the selected Provider produces a value. */
@@ -46,6 +46,14 @@ public final class EffectiveProvenanceView {
             this.knowledge = knowledge;
             this.occurrence = occurrence;
             this.reason = reason;
+        }
+
+        private static final Source EMPTY_COLLECTION = new Source(SourceSelection.DEFAULT, SourceKnowledge.DEFAULT, null, "empty collection");
+        private static final Source MISSING_COLLECTION = new Source(SourceSelection.DEFAULT, SourceKnowledge.DEFAULT, null, "missing collection");
+
+        /** Engine defaults have no configuring author and are distinct from an explicit missing provider. */
+        public static Source collectionDefault(boolean missing) {
+            return missing ? MISSING_COLLECTION : EMPTY_COLLECTION;
         }
 
         public static Source known(SourceSelection selection, MutationOccurrence occurrence) {

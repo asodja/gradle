@@ -49,7 +49,7 @@ public final class ProvenanceRenderer {
         int shown = 0;
         while (shown < UPDATE_LIMIT && updates.hasNext()) {
             MutationOccurrence occurrence = updates.next();
-            StringBuilder operation = new StringBuilder("update ");
+            StringBuilder operation = new StringBuilder(occurrence.getOperation().getKind() == SemanticOperation.Kind.CONTRIBUTION ? "contribution " : "update ");
             int shapes = 0;
             for (SemanticOperation.Shape shape : occurrence.getOperation().getShapes()) {
                 if (shapes == DETAIL_LIMIT) {
@@ -106,6 +106,9 @@ public final class ProvenanceRenderer {
                     selection += " (unclassified binding)";
                 }
                 frame(result, selection, occurrence.getAttribution());
+                break;
+            case DEFAULT:
+                result.append("    at source (default ").append(source.getReason()).append(")\n");
                 break;
             case UNCONFIGURED:
                 result.append("    at source (unconfigured)\n");

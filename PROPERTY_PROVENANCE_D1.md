@@ -16,6 +16,10 @@
 
 # Property provenance: D1 origin-only diagnostics checkpoint
 
+For the current roadmap numbering and collection implementation, see
+[the D2 collection checkpoint](PROPERTY_PROVENANCE_D2.md). Earlier milestone numbers
+below describe the historical checkpoint; transport is now D3.
+
 D1 follows package-separation commit `080019473b9` and the updated roadmap at
 `1e13c84d1024dc6c69c538f8b62db3e61993fb6d`. The engine and semantics baselines remain
 those recorded in S0/S1. This checkpoint stops before D2 transport; it adds no source

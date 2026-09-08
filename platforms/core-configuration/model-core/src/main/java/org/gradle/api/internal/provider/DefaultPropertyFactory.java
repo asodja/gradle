@@ -76,16 +76,25 @@ public class DefaultPropertyFactory implements PropertyFactory {
 
     @Override
     public <T> DefaultListProperty<T> listProperty(Class<T> elementType) {
+        if (propertyHost instanceof PropertyProvenanceHost) {
+            return new DiagnosticListProperty<>((PropertyProvenanceHost) propertyHost, maybeAsWrapperType(elementType));
+        }
         return new DefaultListProperty<>(propertyHost, maybeAsWrapperType(elementType));
     }
 
     @Override
     public <T> DefaultSetProperty<T> setProperty(Class<T> elementType) {
+        if (propertyHost instanceof PropertyProvenanceHost) {
+            return new DiagnosticSetProperty<>((PropertyProvenanceHost) propertyHost, maybeAsWrapperType(elementType));
+        }
         return new DefaultSetProperty<>(propertyHost, maybeAsWrapperType(elementType));
     }
 
     @Override
     public <V, K> DefaultMapProperty<K, V> mapProperty(Class<K> keyType, Class<V> valueType) {
+        if (propertyHost instanceof PropertyProvenanceHost) {
+            return new DiagnosticMapProperty<>((PropertyProvenanceHost) propertyHost, maybeAsWrapperType(keyType), maybeAsWrapperType(valueType));
+        }
         return new DefaultMapProperty<>(propertyHost, maybeAsWrapperType(keyType), maybeAsWrapperType(valueType));
     }
 

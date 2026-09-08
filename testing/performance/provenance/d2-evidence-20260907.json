@@ -1,0 +1,85 @@
+{
+  "parentCommit": "2eb3ddf56f711aa773fe52ca29044375e4d75f42",
+  "roadmapRevision": "d71ed7bafde06b54faa1810b64f563c41616ddb0",
+  "semanticsRevision": "0a695690ac2a4852b7d455a31b1adf830345076c",
+  "sourceAndArtifactHashes": {
+    "PROPERTY_PROVENANCE_ARCHITECTURE.md": "2f4898aa23b2be81098fa5fe1d748bb0515209611eb0ea168539805ae41a03a7",
+    "PROPERTY_PROVENANCE_D1.md": "710e00643f9cf1e6584c0efb666d786946c9a78b8f68b3dc84213d641b90961b",
+    "PROPERTY_PROVENANCE_D2.md": "05543e02f1f58f34172d67d63f69e8c7904daab9702efa7965ce0b724c87352d",
+    "platforms/core-configuration/model-core/src/integTest/groovy/org/gradle/api/provider/CollectionPropertyProvenanceIntegrationTest.groovy": "e6edafc1639039e62b13a5cb3d1db42b8466032e22781d23aac1580d3e17dd14",
+    "platforms/core-configuration/model-core/src/integTest/groovy/org/gradle/api/provider/PropertyAttributionIntegrationTest.groovy": "d9eb8bb909572e4d91b8ad61f28afe7a5fce801c5c05c3ccf262d9023ec582d0",
+    "platforms/core-configuration/model-core/src/main/java/org/gradle/api/internal/provenance/EffectiveProvenanceView.java": "549ad7a27063fc173d3ae7002d3341817390bbc68ea94af7e879e1d3971719e4",
+    "platforms/core-configuration/model-core/src/main/java/org/gradle/api/internal/provenance/OrdinaryProvenanceState.java": "4175df0e5ed7baa683dee7b932c7856a6ce5a964496003e94c4c7c0bb237d5ff",
+    "platforms/core-configuration/model-core/src/main/java/org/gradle/api/internal/provenance/ProvenanceRenderer.java": "41dfa37f9befb8f09ea9ee4b942307046899e8623a5bae5d726e3484f706833e",
+    "platforms/core-configuration/model-core/src/main/java/org/gradle/api/internal/provenance/SemanticOperation.java": "211afc74b3544efc2945ee091129af1acb8e7cd49e1abd49463d79beb6fc6754",
+    "platforms/core-configuration/model-core/src/main/java/org/gradle/api/internal/provenance/UpdateSequence.java": "574b63e991ec89b23864f55fc5a3193c7b8b9c616daf83f4293111dce1382e66",
+    "platforms/core-configuration/model-core/src/main/java/org/gradle/api/internal/provider/AbstractCollectionProperty.java": "45515541d4b5efa447ca9eaf9481db5f3b670838932a7c275068c117e60d7cf5",
+    "platforms/core-configuration/model-core/src/main/java/org/gradle/api/internal/provider/CollectionPropertyProvenance.java": "4404d250e11dde6b45411e8356be0871b8b1c623964434572f12717fc1768b1e",
+    "platforms/core-configuration/model-core/src/main/java/org/gradle/api/internal/provider/CollectionProvenanceSnapshot.java": "de88b629e15ac00b516c4bc5e17df15aeee19dd5cec81d503ddba614abdbf357",
+    "platforms/core-configuration/model-core/src/main/java/org/gradle/api/internal/provider/DefaultMapProperty.java": "bc0666cf59e73e43b79a590eba27588f1a98ddb2e93d32bfad2c0116c4fc0c42",
+    "platforms/core-configuration/model-core/src/main/java/org/gradle/api/internal/provider/DefaultPropertyFactory.java": "2ef25f37074a2bbe9e29f7936cc2d46f80c2934ccdcead5aebedab453aa3d6a3",
+    "platforms/core-configuration/model-core/src/main/java/org/gradle/api/internal/provider/DiagnosticListProperty.java": "c9bc1c6d9ddba3368169e37e524632fe837366fb2b69b28df7d37801f5a99c7c",
+    "platforms/core-configuration/model-core/src/main/java/org/gradle/api/internal/provider/DiagnosticMapProperty.java": "9c0595773d386ec2f402ad90122a86b04697fae25bfcc33b9668116a6eac1153",
+    "platforms/core-configuration/model-core/src/main/java/org/gradle/api/internal/provider/DiagnosticSetProperty.java": "c9ddc2705d87cf02b05f85acc8b3f3e8795fa4eecd8c34541915931db597944b",
+    "platforms/core-configuration/model-core/src/test/groovy/org/gradle/api/internal/provenance/SharedProvenanceContractTest.groovy": "33f9b4970bbd3c316c4e1d0368df3b71eb4e4dad785eb6be05598980cca82af3",
+    "platforms/core-configuration/model-core/src/test/groovy/org/gradle/api/internal/provider/DiagnosticCollectionPropertyTest.groovy": "5e9b2fabe4f104288be903317f09923b86a05e0db8887378ef31ce2c975ea332",
+    "platforms/core-configuration/model-core/src/test/groovy/org/gradle/api/internal/provider/MapPropertySpec.groovy": "1541f4f0832f822e6b21b1aa52be19455f3a264f4dd6ca3fed8a2b0a63d85925",
+    "testing/performance/provenance/CollectionBaselineProbe.java": "0dcad05fd4f60541a284902e3a51c77a0c0e66bea04294630d819933307b0263",
+    "testing/performance/provenance/CollectionEnabledProbe.java": "2e3071c9a3d3e2079a6afa646392f4d177bffa1d265aeeade44f1f7dfb8cfffe",
+    "testing/performance/provenance/d2-collections-probe-20260907.json": "2d5118a75457b96ab831798925b64efd6ab2c8d1f85f4355f37377b02c54e7a1",
+    "testing/performance/provenance/run-collection-probe.py": "5a85d0ac40f53c0d462c0ebf94f1fa87e24196fd56904bef246498666663eede"
+  },
+  "compiledClassHashes": {
+    "platforms/core-configuration/model-core/build/classes/java/main/org/gradle/api/internal/provider/DiagnosticListProperty.class": "8433ec08d532f5564c85daefd298653d83ee3583c3256409d26b2e47907d2974",
+    "platforms/core-configuration/model-core/build/classes/java/main/org/gradle/api/internal/provider/DiagnosticSetProperty.class": "c1518fd7aaa2d7bbbc194bf48980747cd82b26689d0289b6dd90c1ae1919f1cf",
+    "platforms/core-configuration/model-core/build/classes/java/main/org/gradle/api/internal/provider/DiagnosticMapProperty.class": "0d7837d9ea2e5ff1176cd577e95da7a016ba56ec9f32ee3b47d608d7439d7f18",
+    "platforms/core-configuration/model-core/build/classes/java/main/org/gradle/api/internal/provider/CollectionProvenanceSnapshot.class": "475396176e7a3d674bd62161336a41bc282b53ce2c0d3458625ccf18a2b90091",
+    "platforms/core-configuration/model-core/build/classes/java/main/org/gradle/api/internal/provider/CollectionPropertyProvenance.class": "9217f4164ad42b763f517b4d14901e4ebbe02eeda89fc391455e1f45774ddfb5",
+    "platforms/core-configuration/model-core/build/classes/java/main/org/gradle/api/internal/provider/DefaultPropertyFactory.class": "f42be11dfc0ef9ae8c2562d40ce7643f305ac738c1a7cfe8cfe02e05f5373b63"
+  },
+  "tests": {
+    "platforms/core-configuration/model-core/build/test-results/test": {
+      "totals": {
+        "tests": 1699,
+        "failures": 0,
+        "errors": 0
+      },
+      "suites": {
+        "org.gradle.api.internal.provider.DiagnosticPropertyTest": 26,
+        "org.gradle.api.internal.provider.DiagnosticCollectionPropertyTest$SetCircularEvaluationTest": 56,
+        "org.gradle.api.internal.provider.DefaultListPropertyTest$ListPropertyCircularFunctionEvaluationTest": 56,
+        "org.gradle.api.internal.provider.DefaultSetPropertyTest$SetPropertyCircularFunctionEvaluationTest": 56,
+        "org.gradle.api.internal.provenance.SharedProvenanceContractTest": 35,
+        "org.gradle.api.internal.provider.DefaultSetPropertyTest": 333,
+        "org.gradle.api.internal.provider.EffectivePropertyProvenanceTest": 18,
+        "org.gradle.api.internal.provider.DiagnosticCollectionPropertyTest$MapCircularEvaluationTest": 160,
+        "org.gradle.api.internal.provenance.ProvenanceRendererTest": 9,
+        "org.gradle.api.internal.provider.MapPropertySpec": 314,
+        "org.gradle.api.internal.provider.DiagnosticCollectionPropertyTest$ListCircularEvaluationTest": 56,
+        "org.gradle.api.internal.provider.DefaultListPropertyTest": 332,
+        "org.gradle.api.internal.provider.DiagnosticCollectionPropertyTest": 62,
+        "org.gradle.api.internal.provenance.OrdinaryProvenanceStateTest": 7,
+        "org.gradle.api.internal.provider.MapPropertySpec$MapPropertyCircularChainEvaluationTest": 160,
+        "org.gradle.api.internal.provider.AttributedPropertyTest": 19
+      }
+    },
+    "platforms/core-configuration/model-core/build/test-results/embeddedIntegTest": {
+      "totals": {
+        "tests": 28,
+        "failures": 0,
+        "errors": 0
+      },
+      "suites": {
+        "org.gradle.api.provider.PropertyAttributionIntegrationTest": 11,
+        "org.gradle.api.provider.CollectionPropertyProvenanceIntegrationTest": 7,
+        "org.gradle.api.provider.PropertyProvenanceDiagnosticsIntegrationTest": 10
+      }
+    }
+  },
+  "validationScan": "https://ge.gradle.org/s/5i7yrct4pvi7u",
+  "notes": [
+    "D2 collection provenance; D3 transport not implemented.",
+    "Raw performance evidence is allocation/scaling and retention, not a production throughput claim.",
+    "Empty/fixed engine suppliers retain owners in baseline and enabled snapshots; see checkpoint."
+  ]
+}
