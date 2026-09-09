@@ -16,6 +16,7 @@
 
 package org.gradle.internal.snapshot.impl;
 
+import org.gradle.api.internal.provider.PropertyProvenanceTransport;
 import org.gradle.internal.isolation.Isolatable;
 import org.gradle.internal.snapshot.ValueSnapshot;
 import org.gradle.internal.state.ManagedFactory;
@@ -24,11 +25,31 @@ import org.jspecify.annotations.Nullable;
 public class IsolatedManagedValue extends AbstractManagedValueSnapshot<Isolatable<?>> implements Isolatable<Object> {
     private final ManagedFactory factory;
     private final Class<?> targetType;
+    private final byte @Nullable [] provenance;
 
     public IsolatedManagedValue(Class<?> targetType, ManagedFactory factory, Isolatable<?> state) {
+        this(targetType, factory, state, null);
+    }
+
+    public IsolatedManagedValue(Class<?> targetType, ManagedFactory factory, Isolatable<?> state, byte @Nullable [] provenance) {
         super(state);
         this.targetType = targetType;
         this.factory = factory;
+        this.provenance = provenance == null ? null : provenance.clone();
+    }
+
+    /** Attaches the checkpoint captured before isolating the value state. */
+    IsolatedManagedValue withProvenance(byte[] checkpoint) {
+        return new IsolatedManagedValue(targetType, factory, state, checkpoint);
+    }
+
+    public byte @Nullable [] getProvenance() {
+        return provenance == null ? null : provenance.clone();
+    }
+
+    private Object recreatedState() {
+        Object value = state.isolate();
+        return provenance == null ? value : new PropertyProvenanceTransport.ManagedState(value, provenance);
     }
 
     @Override
@@ -38,7 +59,7 @@ public class IsolatedManagedValue extends AbstractManagedValueSnapshot<Isolatabl
 
     @Override
     public Object isolate() {
-        return factory.fromState(targetType, state.isolate());
+        return factory.fromState(targetType, recreatedState());
     }
 
     @Nullable
@@ -47,7 +68,7 @@ public class IsolatedManagedValue extends AbstractManagedValueSnapshot<Isolatabl
         if (type.isAssignableFrom(targetType)) {
             return type.cast(isolate());
         }
-        return type.cast(factory.fromState(type, state.isolate()));
+        return type.cast(factory.fromState(type, recreatedState()));
     }
 
     public int getFactoryId() {

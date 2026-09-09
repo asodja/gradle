@@ -16,6 +16,7 @@
 
 package org.gradle.api.internal.provider;
 
+import org.gradle.api.internal.provenance.ScopeIdentity;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
@@ -28,6 +29,9 @@ import org.gradle.internal.service.scopes.ServiceScope;
 @ManagedObjectProvider
 @ServiceScope({Scope.Global.class, Scope.Project.class})
 public interface PropertyFactory {
+    /** Creates a transport factory with the recorded owner and the receiving host's read policy. */
+    PropertyFactory withProvenance(ScopeIdentity owner);
+
 
     /**
      * If you are calling this, you are probably doing something wrong.

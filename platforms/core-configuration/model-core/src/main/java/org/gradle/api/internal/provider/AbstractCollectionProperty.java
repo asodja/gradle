@@ -122,7 +122,7 @@ public abstract class AbstractCollectionProperty<T, C extends Collection<T>> ext
      */
     protected abstract C emptyCollection();
 
-    private void withActualValue(Runnable action) {
+    protected void withActualValue(Runnable action, boolean bulk) {
         setToConventionIfUnset();
         action.run();
     }
@@ -132,7 +132,7 @@ public abstract class AbstractCollectionProperty<T, C extends Collection<T>> ext
         return isNoValueSupplier(getConventionSupplier());
     }
 
-    private boolean isNoValueSupplier(CollectionSupplier<T, C> valueSupplier) {
+    protected boolean isNoValueSupplier(CollectionSupplier<T, C> valueSupplier) {
         // Cannot use plain NoValueSupplier because of Java restrictions:
         // a generic type [AbstractCollectionProperty<T, C>.]NoValueSupplier cannot be used in instanceof.
         return valueSupplier instanceof AbstractCollectionProperty<?, ?>.NoValueSupplier;
@@ -168,29 +168,29 @@ public abstract class AbstractCollectionProperty<T, C extends Collection<T>> ext
 
     @Override
     public void append(T element) {
-        withActualValue(() -> add(element));
+        withActualValue(() -> add(element), false);
     }
 
     @Override
     public void append(Provider<? extends T> provider) {
-        withActualValue(() -> add(provider));
+        withActualValue(() -> add(provider), false);
     }
 
     @Override
     @SuppressWarnings("varargs")
     @SafeVarargs
     public final void appendAll(T... elements) {
-        withActualValue(() -> addAll(elements));
+        withActualValue(() -> addAll(elements), true);
     }
 
     @Override
     public void appendAll(Iterable<? extends T> elements) {
-        withActualValue(() -> addAll(elements));
+        withActualValue(() -> addAll(elements), true);
     }
 
     @Override
     public void appendAll(Provider<? extends Iterable<? extends T>> provider) {
-        withActualValue(() -> addAll(provider));
+        withActualValue(() -> addAll(provider), true);
     }
 
     @Override
@@ -203,7 +203,7 @@ public abstract class AbstractCollectionProperty<T, C extends Collection<T>> ext
      *
      * @param collector the collector to add
      */
-    private void addExplicitCollector(Collector<T> collector) {
+    protected void addExplicitCollector(Collector<T> collector) {
         assertCanMutate();
         setSupplier(withAppendedValue(collector));
     }

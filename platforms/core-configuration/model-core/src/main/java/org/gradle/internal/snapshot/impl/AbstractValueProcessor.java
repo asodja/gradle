@@ -119,7 +119,7 @@ abstract class AbstractValueProcessor {
         return javaSerialization(value, visitor);
     }
 
-    private <T> T processManaged(Managed managed, ValueVisitor<T> visitor) {
+    protected <T> T processManaged(Managed managed, ValueVisitor<T> visitor) {
         if (managed.isImmutable()) {
             return visitor.managedImmutableValue(managed);
         } else {

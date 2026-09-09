@@ -10,3 +10,14 @@ Human contributors should start from [CONTRIBUTING.md](CONTRIBUTING.md).
   - For JavaDoc style guidelines, see [JavadocStyleGuide.md](contributing/JavadocStyleGuide.md).
   - For guidelines on nullability and related annotations, see [Nullability.md](contributing/Nullability.md).
   - For information on writing tests for Gradle, see [Testing.md](contributing/Testing.md).
+
+## Property provenance work
+
+- Prefix provenance commit subjects with their milestone, for example `D5: Add Java and Kotlin source locations`. Use the historical `S0/S1`, `S2`, and `S3` prefixes for foundation work.
+
+- Keep provenance separate from ordinary Provider/property logic, including `DefaultMapProperty`, `AbstractCollectionProperty`, `AbstractProperty`, and `ManagedFactories`. Do not add provenance fields, bookkeeping, diagnostic branches, or observer calls to those engines.
+- Keep value selection, validation, evaluation, producer dependencies, and lifecycle in the existing engines. Use diagnostic subclasses/adapters and shared provenance helpers; do not duplicate engine algorithms to produce diagnostics.
+- Keep `org.gradle.api.internal.provenance` descriptor-only, dependent only on the JDK, JSpecify, and its own types. Runtime Provider/host integration belongs in adapters outside that package.
+- Keep managed transport in `ProvenanceManagedFactory` and the serialization adapters. Ordinary managed factories consume ordinary value state, without provenance envelopes or checkpoint handling.
+- Narrow, provenance-neutral protected engine seams are acceptable when needed by adapters. Prefer explicit forwarding in diagnostic subclasses over moving diagnostic control flow into the engines to reduce repetition.
+- Before extending diagnostic coverage, read [the collection separation contract](PROPERTY_PROVENANCE_COLLECTION_HOOKS.md#separation-boundary), [the D3 transport checkpoint](PROPERTY_PROVENANCE_D3.md), [the D4 gap audit](PROPERTY_PROVENANCE_D4_RESEARCH.md), [the D4 checkpoint](PROPERTY_PROVENANCE_D4.md), and [the D5 source-location checkpoint](PROPERTY_PROVENANCE_D5.md). Older checkpoint documents use superseded milestone numbering.

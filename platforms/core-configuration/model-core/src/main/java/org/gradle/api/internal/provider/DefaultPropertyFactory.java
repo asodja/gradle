@@ -17,6 +17,7 @@
 package org.gradle.api.internal.provider;
 
 import org.gradle.api.InvalidUserCodeException;
+import org.gradle.api.internal.provenance.ScopeIdentity;
 import org.gradle.api.artifacts.ExternalModuleDependencyBundle;
 import org.gradle.api.file.Directory;
 import org.gradle.api.file.RegularFile;
@@ -35,14 +36,25 @@ public class DefaultPropertyFactory implements PropertyFactory {
     }
 
     @Override
+    public PropertyFactory withProvenance(ScopeIdentity owner) {
+        return new DefaultPropertyFactory(PropertyProvenanceTransport.host(propertyHost, owner));
+    }
+
+    @Override
     @Deprecated
     public DefaultProperty<?> propertyWithNoType() {
+        if (propertyHost instanceof PropertyProvenanceHost) {
+            return new DiagnosticProperty<>((PropertyProvenanceHost) propertyHost, null);
+        }
         return new DefaultProperty<>(propertyHost, null);
     }
 
     @Override
     @Deprecated
     public <T> DefaultProperty<T> propertyOfAnyType(Class<T> type) {
+        if (propertyHost instanceof PropertyProvenanceHost) {
+            return new DiagnosticProperty<>((PropertyProvenanceHost) propertyHost, maybeAsWrapperType(type));
+        }
         return new DefaultProperty<>(propertyHost, maybeAsWrapperType(type));
     }
 
@@ -64,6 +76,9 @@ public class DefaultPropertyFactory implements PropertyFactory {
             throw new InvalidUserCodeException(invalidPropertyCreationError("RegularFile", "RegularFileProperty"));
         }
 
+        if (propertyHost instanceof PropertyProvenanceHost) {
+            return new DiagnosticProperty<>((PropertyProvenanceHost) propertyHost, maybeAsWrapperType(type));
+        }
         return new DefaultProperty<>(propertyHost, maybeAsWrapperType(type));
     }
 
@@ -73,16 +88,25 @@ public class DefaultPropertyFactory implements PropertyFactory {
 
     @Override
     public <T> DefaultListProperty<T> listProperty(Class<T> elementType) {
+        if (propertyHost instanceof PropertyProvenanceHost) {
+            return new DiagnosticListProperty<>((PropertyProvenanceHost) propertyHost, maybeAsWrapperType(elementType));
+        }
         return new DefaultListProperty<>(propertyHost, maybeAsWrapperType(elementType));
     }
 
     @Override
     public <T> DefaultSetProperty<T> setProperty(Class<T> elementType) {
+        if (propertyHost instanceof PropertyProvenanceHost) {
+            return new DiagnosticSetProperty<>((PropertyProvenanceHost) propertyHost, maybeAsWrapperType(elementType));
+        }
         return new DefaultSetProperty<>(propertyHost, maybeAsWrapperType(elementType));
     }
 
     @Override
     public <V, K> DefaultMapProperty<K, V> mapProperty(Class<K> keyType, Class<V> valueType) {
+        if (propertyHost instanceof PropertyProvenanceHost) {
+            return new DiagnosticMapProperty<>((PropertyProvenanceHost) propertyHost, maybeAsWrapperType(keyType), maybeAsWrapperType(valueType));
+        }
         return new DefaultMapProperty<>(propertyHost, maybeAsWrapperType(keyType), maybeAsWrapperType(valueType));
     }
 

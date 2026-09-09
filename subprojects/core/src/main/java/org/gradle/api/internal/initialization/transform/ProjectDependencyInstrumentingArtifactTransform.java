@@ -29,7 +29,9 @@ import org.gradle.internal.classpath.types.InstrumentationTypeRegistry;
 import org.gradle.internal.instrumentation.api.types.BytecodeInterceptorFilter;
 import org.gradle.internal.instrumentation.reporting.MethodInterceptionReportCollector;
 import org.gradle.internal.instrumentation.reporting.listener.BytecodeUpgradeReportMethodInterceptionListener;
+import org.gradle.internal.instrumentation.reporting.listener.MethodInterceptionListener;
 import org.gradle.work.DisableCachingByDefault;
+import org.jspecify.annotations.Nullable;
 
 import java.io.File;
 import java.util.Optional;
@@ -77,8 +79,8 @@ public abstract class ProjectDependencyInstrumentingArtifactTransform extends Ba
             public InstrumentingClassTransform getClassTransform() {
                 return interceptionListener
                     // TODO: Using gradleCoreTypeRegistry means we won't detect calls for user types that extend from Gradle types, fix that
-                    .map(listener -> new InstrumentingClassTransform(BytecodeInterceptorFilter.INSTRUMENTATION_AND_BYTECODE_REPORT, getGradleCoreTypeRegistry(), listener))
-                    .orElseGet(() -> new InstrumentingClassTransform(BytecodeInterceptorFilter.INSTRUMENTATION_ONLY, InstrumentationTypeRegistry.EMPTY));
+                    .map(listener -> new InstrumentingClassTransform(BytecodeInterceptorFilter.INSTRUMENTATION_AND_BYTECODE_REPORT, getGradleCoreTypeRegistry(), listener, sourceRoot()))
+                    .orElseGet(() -> new InstrumentingClassTransform(BytecodeInterceptorFilter.INSTRUMENTATION_ONLY, InstrumentationTypeRegistry.EMPTY, MethodInterceptionListener.NO_OP, sourceRoot()));
             }
 
             @Override
@@ -86,6 +88,10 @@ public abstract class ProjectDependencyInstrumentingArtifactTransform extends Ba
                 interceptionListener.ifPresent(BytecodeUpgradeReportMethodInterceptionListener::close);
             }
         };
+    }
+
+    protected @Nullable String sourceRoot() {
+        return null;
     }
 
     private InstrumentationTypeRegistry getGradleCoreTypeRegistry() {

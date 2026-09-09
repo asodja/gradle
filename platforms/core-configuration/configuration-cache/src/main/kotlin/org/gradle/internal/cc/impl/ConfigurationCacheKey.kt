@@ -95,6 +95,7 @@ class ConfigurationCacheKey(
         putStringIfNotNull(startParameter.develocityPluginVersion)
         putBoolean(encryptionConfiguration.isEncrypting)
         putHash(encryptionConfiguration.encryptionKeyHashCode)
+        putBoolean(startParameter.isPropertyProvenanceEnabled)
         putBoolean(startParameter.isDeduplicatingStrings)
         putBoolean(startParameter.isFineGrainedPropertyTracking)
         // Integrity check affects the way fingerprint is stored.

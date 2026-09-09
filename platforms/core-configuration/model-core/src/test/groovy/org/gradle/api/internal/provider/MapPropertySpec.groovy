@@ -1702,7 +1702,7 @@ The value of this property is derived from: <source>""")
                 safeConsumers.collectMany { combineWithExtraGetters(it) }
         }
 
-        private List<Consumer<ProviderInternal<?>>> combineWithExtraGetters(Consumer<ProviderInternal<?>> targetConsumer) {
+        protected List<Consumer<ProviderInternal<?>>> combineWithExtraGetters(Consumer<ProviderInternal<?>> targetConsumer) {
             if (!(targetConsumer instanceof ProviderConsumer)) {
                 // Map-derived providers do not support consumers for properties.
                 return []
@@ -1723,7 +1723,7 @@ The value of this property is derived from: <source>""")
             }
         }
 
-        private List<MapPropertyProviderGetter> extraMapPropertyProviderGetters() {
+        protected List<MapPropertyProviderGetter> extraMapPropertyProviderGetters() {
             return [
                 new MapPropertyProviderGetter(name: "keySet", impl: { it.keySet() }),
                 new MapPropertyProviderGetter(name: "getting", impl: { it.getting("item") }),

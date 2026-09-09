@@ -36,11 +36,12 @@ import org.gradle.api.internal.artifacts.dsl.DependencyHandlerInternal;
 import org.gradle.api.internal.artifacts.dsl.dependencies.DependencyFactoryInternal.ClassPathNotation;
 import org.gradle.api.internal.initialization.transform.ClassLoadTimeInstrumentationComposer;
 import org.gradle.api.internal.initialization.transform.registration.InstrumentationTransformRegisterer;
-import org.gradle.api.internal.initialization.transform.services.CacheInstrumentationDataBuildService;
 import org.gradle.api.internal.initialization.transform.services.CacheInstrumentationDataBuildService.ResolutionScope;
-import org.gradle.api.internal.initialization.transform.utils.InstrumentationClasspathMerger;
+import org.gradle.api.internal.initialization.transform.services.CacheInstrumentationDataBuildService;
 import org.gradle.api.internal.initialization.transform.utils.InstrumentationClasspathMerger.FileType;
+import org.gradle.api.internal.initialization.transform.utils.InstrumentationClasspathMerger;
 import org.gradle.api.invocation.Gradle;
+import org.gradle.internal.buildoption.InternalOptions;
 import org.gradle.internal.classpath.ClassPath;
 import org.gradle.internal.classpath.TransformedClassPath;
 import org.gradle.internal.component.local.model.OpaqueComponentIdentifier;
@@ -102,13 +103,15 @@ public class DefaultScriptClassPathResolver implements ScriptClassPathResolver {
         AgentStatus agentStatus,
         Gradle gradle,
         PropertyUpgradeReportConfig propertyUpgradeReportConfig,
-        ClassLoadTimeInstrumentationComposer classLoadTimeInstrumentationComposer
+        ClassLoadTimeInstrumentationComposer classLoadTimeInstrumentationComposer,
+        InternalOptions options
     ) {
         // Shared services must be provided lazily, otherwise they are instantiated too early and some cases can fail
         this.instrumentationTransformRegisterer = new InstrumentationTransformRegisterer(
             agentStatus,
             propertyUpgradeReportConfig,
-            Lazy.atomic().of(gradle::getSharedServices)
+            Lazy.atomic().of(gradle::getSharedServices),
+            options.getBoolean(InternalOptions.ofBoolean("org.gradle.internal.property-provenance", false))
         );
         this.propertyUpgradeReportConfig = propertyUpgradeReportConfig;
         this.classLoadTimeInstrumentationComposer = classLoadTimeInstrumentationComposer;

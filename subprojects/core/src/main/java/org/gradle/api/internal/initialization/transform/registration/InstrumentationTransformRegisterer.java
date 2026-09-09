@@ -24,10 +24,12 @@ import org.gradle.api.internal.initialization.transform.ExternalDependencyInstru
 import org.gradle.api.internal.initialization.transform.InstrumentationAnalysisTransform;
 import org.gradle.api.internal.initialization.transform.MergeInstrumentationAnalysisTransform;
 import org.gradle.api.internal.initialization.transform.ProjectDependencyInstrumentingArtifactTransform;
+import org.gradle.api.internal.initialization.transform.SourceAwareProjectDependencyInstrumentingArtifactTransform;
 import org.gradle.api.internal.initialization.transform.services.CacheInstrumentationDataBuildService;
 import org.gradle.api.internal.provider.Providers;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.services.BuildServiceRegistry;
+import org.gradle.internal.classpath.transforms.InstrumentingClassTransform;
 import org.gradle.internal.id.IdGenerator;
 import org.gradle.internal.id.LongIdGenerator;
 import org.gradle.internal.instrumentation.agent.AgentStatus;
@@ -51,11 +53,13 @@ public class InstrumentationTransformRegisterer {
     private static final String BUILD_SERVICE_NAME = "__InternalCacheInstrumentationDataBuildService__";
 
     private final AgentStatus agentStatus;
+    private final boolean provenanceEnabled;
     private final Lazy<BuildServiceRegistry> buildServiceRegistry;
     private final IdGenerator<Long> contextIdGenerator;
     private final PropertyUpgradeReportConfig propertyUpgradeReportConfig;
 
-    public InstrumentationTransformRegisterer(AgentStatus agentStatus, PropertyUpgradeReportConfig propertyUpgradeReportConfig, Lazy<BuildServiceRegistry> buildServiceRegistry) {
+    public InstrumentationTransformRegisterer(AgentStatus agentStatus, PropertyUpgradeReportConfig propertyUpgradeReportConfig, Lazy<BuildServiceRegistry> buildServiceRegistry, boolean provenanceEnabled) {
+        this.provenanceEnabled = provenanceEnabled;
         this.buildServiceRegistry = buildServiceRegistry;
         this.contextIdGenerator = new LongIdGenerator();
         this.agentStatus = agentStatus;
@@ -108,7 +112,7 @@ public class InstrumentationTransformRegisterer {
     private void registerInstrumentationOnlyPipeline(long contextId, DependencyHandler dependencyHandler) {
         registerInstrumentingTransform(contextId,
             dependencyHandler,
-            ProjectDependencyInstrumentingArtifactTransform.class,
+            provenanceEnabled ? SourceAwareProjectDependencyInstrumentingArtifactTransform.class : ProjectDependencyInstrumentingArtifactTransform.class,
             Providers.notDefined(),
             NOT_INSTRUMENTED,
             INSTRUMENTED_ONLY,
@@ -134,6 +138,7 @@ public class InstrumentationTransformRegisterer {
                     params.getBuildService().set(service);
                     params.getContextId().set(contextId);
                     params.getAgentSupported().set(agentStatus.isAgentInstrumentationEnabled());
+                    params.getInstrumentationVersion().set(InstrumentingClassTransform.getDecorationFormat());
                     paramsConfiguration.accept(params);
                 });
             }

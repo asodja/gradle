@@ -65,6 +65,8 @@ public abstract class BaseInstrumentingArtifactTransform<T extends Parameters> i
         Property<Long> getContextId();
         @Input
         Property<Boolean> getAgentSupported();
+        @Input
+        Property<Integer> getInstrumentationVersion();
     }
 
     protected final Lazy<InjectedInstrumentationServices> internalServices = Lazy.unsafe().of(() -> getObjects().newInstance(InjectedInstrumentationServices.class));
