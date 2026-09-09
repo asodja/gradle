@@ -47,8 +47,8 @@ class PropertyProvenanceDiagnosticsIntegrationTest extends AbstractIntegrationSp
         fails('help')
 
         then:
-        output.contains("Configuration trace to source for extension 'messages' property 'message' (build ':', project ':'):")
-        failure.assertThatCause(containsString("Failure trace to source for extension 'messages' property 'message' (build ':', project ':'):"))
+        output.contains("Configuration of extension 'messages' property 'message':")
+        failure.assertThatCause(containsString("Configuration of extension 'messages' property 'message':"))
         !output.contains("'unnamed property'")
         !failure.error.contains("'unnamed property'")
 
@@ -86,11 +86,11 @@ class PropertyProvenanceDiagnosticsIntegrationTest extends AbstractIntegrationSp
 
         then:
         failure.assertHasCause('Cannot query the value of this property because it has no value available.')
-        failure.assertThatCause(containsString("Failure trace to source for 'unnamed property' (build ':', project ':'):"))
-        failure.assertThatCause(containsString("at update map [plugin class 'UpdatePlugin'"))
-        failure.assertThatCause(containsString("at update map -> map [plugin class 'UpdatePlugin'"))
-        failure.assertThatCause(containsString("at explicit source [plugin class 'SourcePlugin'"))
-        failure.assertThatCause(containsString('Shadowed configuration (not selected)'))
+        failure.assertThatCause(containsString("Configuration of 'unnamed property':"))
+        failure.assertThatCause(containsString("update map by plugin 'UpdatePlugin'"))
+        failure.assertThatCause(containsString("update map -> map by plugin 'UpdatePlugin'"))
+        failure.assertThatCause(containsString("set by plugin 'SourcePlugin'"))
+        failure.assertThatCause(containsString('Overridden'))
         !failure.error.contains('secret fallback')
     }
 
@@ -112,8 +112,8 @@ class PropertyProvenanceDiagnosticsIntegrationTest extends AbstractIntegrationSp
         succeeds('help')
 
         then:
-        output.contains('Configuration trace to source') == explain
-        !output.contains('Failure trace to source')
+        output.contains('Configuration of') == explain
+        output.count('Configuration of') == (explain ? 2 : 0)
         !output.contains('secret fallback')
         !output.contains('secret fixed')
 
@@ -146,8 +146,8 @@ class PropertyProvenanceDiagnosticsIntegrationTest extends AbstractIntegrationSp
 
         then:
         failure.assertHasCause('The value for this property cannot be changed any further.')
-        failure.assertThatCause(containsString("failed set [plugin class 'CallerPlugin'"))
-        failure.assertThatCause(containsString("explicit source [plugin class 'SourcePlugin'"))
+        failure.assertThatCause(containsString("failed set by plugin 'CallerPlugin'"))
+        failure.assertThatCause(containsString("set by plugin 'SourcePlugin'"))
         !failure.error.contains('accepted secret')
         !failure.error.contains('rejected secret')
     }
@@ -166,8 +166,8 @@ class PropertyProvenanceDiagnosticsIntegrationTest extends AbstractIntegrationSp
 
         then:
         failure.assertHasCause('The value for this property is final and cannot be changed any further.')
-        failure.assertThatCause(containsString('failed set [unknown caller origin]'))
-        failure.assertThatCause(containsString('at explicit source [build file'))
+        failure.assertThatCause(containsString('failed set by unknown caller'))
+        failure.assertThatCause(containsString('set by build file'))
     }
 
     def 'settings configured project source survives missing finalization and copy'() {
@@ -188,8 +188,8 @@ class PropertyProvenanceDiagnosticsIntegrationTest extends AbstractIntegrationSp
         fails('help')
 
         then:
-        failure.assertThatCause(containsString('Failure trace to source'))
-        failure.assertThatCause(containsString('at explicit source [settings file'))
+        failure.assertThatCause(containsString('Configuration of'))
+        failure.assertThatCause(containsString('set by settings file'))
         failure.assertThatCause(containsString("scope 'settings'"))
     }
 
@@ -206,7 +206,7 @@ class PropertyProvenanceDiagnosticsIntegrationTest extends AbstractIntegrationSp
 
         then:
         failure.assertHasCause('Cannot query the value of this property because it has no value available.')
-        !failure.error.contains('Failure trace to source')
-        !failure.error.contains('Configuration trace to source')
+        !failure.error.contains('Configuration of')
+        !failure.error.contains('Configuration of')
     }
 }

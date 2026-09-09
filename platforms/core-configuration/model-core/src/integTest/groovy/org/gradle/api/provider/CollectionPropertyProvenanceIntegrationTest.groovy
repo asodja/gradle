@@ -58,11 +58,11 @@ class CollectionPropertyProvenanceIntegrationTest extends AbstractIntegrationSpe
         fails('help')
 
         then:
-        output.contains("Configuration trace to source for extension 'model' property 'items'")
-        output.count("contribution ${operation} [plugin class 'ContributionPlugin'") == 2
-        failure.assertThatCause(containsString("Failure trace to source for extension 'model' property 'items'"))
-        failure.assertThatCause(containsString("explicit source [plugin class 'SourcePlugin'"))
-        failure.assertThatCause(containsString('Shadowed configuration (not selected)'))
+        output.contains("Configuration of extension 'model' property 'items'")
+        output.count("${operation} by plugin 'ContributionPlugin'") == 2
+        failure.assertThatCause(containsString("Configuration of extension 'model' property 'items'"))
+        failure.assertThatCause(containsString("set by plugin 'SourcePlugin'"))
+        failure.assertThatCause(containsString('Overridden'))
         !failure.error.contains('secret')
 
         where:
@@ -91,9 +91,9 @@ class CollectionPropertyProvenanceIntegrationTest extends AbstractIntegrationSpe
         fails('help')
 
         then:
-        failure.assertThatCause(containsString('at explicit source [settings file'))
+        failure.assertThatCause(containsString('set by settings file'))
         failure.assertThatCause(containsString("scope 'settings'"))
-        failure.assertThatCause(containsString('contribution add [build file'))
+        failure.assertThatCause(containsString('add by build file'))
     }
 
     def 'disabled collection failure retains original message for #creation'() {

@@ -65,7 +65,7 @@ class DiagnosticCollectionPropertyTest extends Specification {
         property.effectiveProvenance.source.occurrence == (preserving ? convention : null)
         property.effectiveProvenance.shadowedConfiguration == (preserving ? [] : [convention])
         captures == 2
-        property.configurationTrace.contains("contribution ${kind == 'map' ? (preserving ? 'insert' : 'put') : (preserving ? 'append' : 'add')}")
+        property.configurationTrace.contains("${kind == 'map' ? (preserving ? 'insert' : 'put') : (preserving ? 'append' : 'add')}")
 
         when:
         property.convention(values(kind, 'later'))
@@ -92,8 +92,8 @@ class DiagnosticCollectionPropertyTest extends Specification {
         then:
         def failure = thrown(MissingValueException)
         failure.cause.class == MissingValueException
-        failure.message.contains("Failure trace to source for 'unnamed property'")
-        failure.message.contains('explicit source')
+        failure.message.contains("Configuration of 'unnamed property'")
+        failure.message.contains('set by')
         !failure.message.contains('secret')
         property.effectiveProvenance.source.occurrence.is(source)
         property.effectiveProvenance.updates.size() == 1
@@ -115,7 +115,7 @@ class DiagnosticCollectionPropertyTest extends Specification {
         !property.present
         property.lastAcceptedMutation.operation.kind == SemanticOperation.Kind.CONTRIBUTION
         property.effectiveProvenance.updates.size() == 0
-        property.configurationTrace.contains('default missing collection')
+        property.configurationTrace.contains('default (missing collection)')
 
         when:
         property.empty()
@@ -147,7 +147,7 @@ class DiagnosticCollectionPropertyTest extends Specification {
 
         then:
         copy.get() == values(kind, 'second', 'local')
-        copy.configurationTrace.contains('for extension.items')
+        copy.configurationTrace.contains('of extension.items')
         copy.effectiveProvenance.source.occurrence.is(source)
         copy.effectiveProvenance.updates.is(contributions)
         property.effectiveProvenance.updates.size() == 0
@@ -182,7 +182,7 @@ class DiagnosticCollectionPropertyTest extends Specification {
         def count = captures
 
         expect:
-        property.configurationTrace.contains('contribution')
+        property.configurationTrace.contains(kind == 'map' ? 'put by' : 'add by')
         property.shallowCopy().configurationTrace == property.configurationTrace
         captures == count
 
@@ -228,8 +228,8 @@ class DiagnosticCollectionPropertyTest extends Specification {
         then:
         def failure = thrown(IllegalStateException)
         failure.cause.message == 'The value for this property is final and cannot be changed any further.'
-        failure.message.contains('Failure trace to source')
-        failure.message.contains('unknown caller origin')
+        failure.message.contains('Configuration of')
+        failure.message.contains('unknown caller')
         property.lastAcceptedMutation.is(occurrence)
         property.get() == values(kind, 'accepted')
 
@@ -374,7 +374,7 @@ class DiagnosticCollectionPropertyTest extends Specification {
 
         then:
         def failure = thrown(IllegalStateException)
-        failure.message.contains("failed replace [plugin 'rejected'")
+        failure.message.contains("failed replace by plugin 'rejected'")
         property.lastAcceptedMutation.is(accepted)
 
         where:

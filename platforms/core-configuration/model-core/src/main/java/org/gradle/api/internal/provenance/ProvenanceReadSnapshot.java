@@ -38,7 +38,35 @@ public abstract class ProvenanceReadSnapshot {
     }
 
     public final ProvenanceReadSnapshot through(List<EffectiveProvenanceView.ProviderBoundary> boundaries) {
-        return new Derived(this, boundaries);
+        List<ProviderOperation> operations = new ArrayList<>();
+        for (EffectiveProvenanceView.ProviderBoundary boundary : boundaries) {
+            operations.add(new ProviderOperation(boundary, null));
+        }
+        return throughOperations(operations);
+    }
+
+    public final ProvenanceReadSnapshot throughOperations(List<ProviderOperation> operations) {
+        return new Derived(this, operations);
+    }
+
+    public final ProvenanceReadSnapshot withInput(ProvenanceReadSnapshot input) {
+        ProvenanceReadSnapshot local = this;
+        return new ProvenanceReadSnapshot() {
+            @Override
+            public EffectiveProvenanceView toView() {
+                return local.toView().withInput(input.toView());
+            }
+        };
+    }
+
+    public final ProvenanceReadSnapshot withPartialReason(String reason) {
+        ProvenanceReadSnapshot local = this;
+        return new ProvenanceReadSnapshot() {
+            @Override
+            public EffectiveProvenanceView toView() {
+                return local.toView().withPartialReason(reason);
+            }
+        };
     }
 
     private static final class Captured extends ProvenanceReadSnapshot {
@@ -78,16 +106,16 @@ public abstract class ProvenanceReadSnapshot {
 
     private static final class Derived extends ProvenanceReadSnapshot {
         private final ProvenanceReadSnapshot input;
-        private final List<EffectiveProvenanceView.ProviderBoundary> boundaries;
+        private final List<ProviderOperation> boundaries;
 
-        private Derived(ProvenanceReadSnapshot input, List<EffectiveProvenanceView.ProviderBoundary> boundaries) {
+        private Derived(ProvenanceReadSnapshot input, List<ProviderOperation> boundaries) {
             this.input = input;
             this.boundaries = Collections.unmodifiableList(new ArrayList<>(boundaries));
         }
 
         @Override
         public EffectiveProvenanceView toView() {
-            return input.toView().through(boundaries);
+            return input.toView().throughOperations(boundaries);
         }
     }
 }

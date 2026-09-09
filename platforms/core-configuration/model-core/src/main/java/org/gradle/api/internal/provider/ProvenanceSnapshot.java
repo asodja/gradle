@@ -21,13 +21,13 @@ import org.gradle.api.internal.provenance.ProvenanceReadSnapshot;
 import org.gradle.api.internal.provenance.MutationOccurrence;
 import org.gradle.api.internal.provenance.OrdinaryProvenanceState;
 import org.gradle.api.internal.provenance.ScopeIdentity;
-import org.gradle.api.internal.provenance.TargetContext;
 import org.gradle.api.internal.provenance.UpdateSequence;
 import org.gradle.internal.evaluation.EvaluationScopeContext;
 import org.jspecify.annotations.Nullable;
 
 /** A captured supplier and descriptor checkpoint, with no reference to its former property owner. */
 public class ProvenanceSnapshot<T> extends AbstractMinimalProvider<T> implements ProvenanceAware {
+    private @Nullable EffectiveProvenanceView historical;
     private final Class<T> type;
     private final ProviderInternal<? extends T> supplier;
     private final ScopeIdentity ownerScope;
@@ -39,6 +39,7 @@ public class ProvenanceSnapshot<T> extends AbstractMinimalProvider<T> implements
 
     ProvenanceSnapshot(Class<T> type, ProviderInternal<? extends T> supplier, OrdinaryProvenanceState state, String modelPath) {
         this(type, supplier, state.getOwnerScope(), state.getModelPath(modelPath), state.getSource(), state.getUpdates(), state.getConvention());
+        historical = state.hasCheckpoint() ? state.getEffectiveProvenance(modelPath) : null;
     }
 
     ProvenanceSnapshot(
@@ -61,12 +62,16 @@ public class ProvenanceSnapshot<T> extends AbstractMinimalProvider<T> implements
 
     @Override
     public ProvenanceReadSnapshot getProvenanceReadSnapshot() {
-        return ProvenanceReadSnapshot.captured(ownerScope, modelPath, source, updates, convention);
+        if (historical != null) {
+            return ProvenanceReadSnapshot.fromView(historical);
+        }
+        ProvenanceReadSnapshot local = ProvenanceReadSnapshot.captured(ownerScope, modelPath, source, updates, convention);
+        return updates.size() != 0 ? local : PropertyProvenanceTraversal.withInput(this, local, supplier);
     }
 
     @Override
     public EffectiveProvenanceView getEffectiveProvenance() {
-        return EffectiveProvenanceView.captured(new TargetContext(ownerScope, modelPath), source, updates, convention);
+        return getProvenanceReadSnapshot().toView();
     }
 
     EffectiveProvenanceView.Source getSource() {

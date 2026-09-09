@@ -218,7 +218,7 @@ public final class DiagnosticSetProperty<T> extends DefaultSetProperty<T> implem
 
     private void replaceValue(Transformer<? extends @Nullable Provider<? extends Iterable<? extends T>>, ? super Provider<Set<T>>> transformation) {
         CollectionProvenanceSnapshot<Set<T>> previous = shallowCopy();
-        Provider<? extends Iterable<? extends T>> candidate = transformation.transform(previous);
+        Provider<? extends Iterable<? extends T>> candidate = PropertyCallSites.withoutLocation(() -> transformation.transform(previous));
         if (candidate == null) {
             super.set((Iterable<? extends T>) null);
             return;

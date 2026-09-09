@@ -21,7 +21,6 @@ import org.gradle.api.internal.provenance.Attribution;
 import org.gradle.api.internal.provenance.EffectiveProvenanceView.ProviderBoundary;
 import org.gradle.api.internal.provenance.FailedOperation;
 import org.gradle.api.internal.provenance.OrdinaryProvenanceState;
-import org.gradle.api.internal.provenance.ProvenanceRenderer;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.provider.SupportsConvention;
@@ -39,7 +38,7 @@ public final class DiagnosticProperty<T> extends AttributedProperty<T> {
     /** Internal explicit explanation seam; callers choose whether to print the returned report. */
     @Override
     public String getConfigurationTrace() {
-        return ProvenanceRenderer.configuration(getEffectiveProvenance());
+        return PropertyProvenanceRenderer.configuration(getEffectiveProvenance());
     }
 
     @Override
@@ -142,7 +141,7 @@ public final class DiagnosticProperty<T> extends AttributedProperty<T> {
             } catch (RuntimeException unavailable) {
                 attribution = null;
             }
-            return PropertyProvenanceDiagnostics.mutation(failure, getEffectiveProvenance(), new FailedOperation(operation, attribution));
+            return PropertyProvenanceDiagnostics.mutation(failure, getEffectiveProvenance(), new FailedOperation(operation, PropertyCallSites.attribution(attribution, this)));
         } catch (RuntimeException unavailable) {
             return failure;
         }

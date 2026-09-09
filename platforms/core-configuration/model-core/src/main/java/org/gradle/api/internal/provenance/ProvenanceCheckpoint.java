@@ -33,7 +33,7 @@ import java.util.List;
  * The versioned format contains no executable code, property values or runtime attribution services.
  */
 public final class ProvenanceCheckpoint {
-    private static final int VERSION = 2;
+    private static final int VERSION = 5;
     private final EffectiveProvenanceView view;
     @Nullable
     private final MutationOccurrence lastAcceptedMutation;
@@ -54,6 +54,13 @@ public final class ProvenanceCheckpoint {
 
     /** Encodes all effective updates, independently of diagnostic rendering limits. */
     public byte[] encode() {
+        return encode(0);
+    }
+
+    private byte[] encode(int depth) {
+        if (depth > 64) {
+            throw new IllegalArgumentException("Property provenance binding depth exceeded.");
+        }
         try {
             ByteArrayOutputStream bytes = new ByteArrayOutputStream();
             DataOutputStream out = new DataOutputStream(bytes);
@@ -78,9 +85,19 @@ public final class ProvenanceCheckpoint {
             for (String reason : view.getPartialReasons()) {
                 string(out, reason);
             }
-            out.writeInt(view.getProviderBoundaries().size());
-            for (EffectiveProvenanceView.ProviderBoundary boundary : view.getProviderBoundaries()) {
-                string(out, boundary.name());
+            out.writeInt(view.getProviderOperations().size());
+            for (ProviderOperation operation : view.getProviderOperations()) {
+                string(out, operation.getKind().name());
+                out.writeBoolean(operation.getAttribution() != null);
+                if (operation.getAttribution() != null) {
+                    attribution(out, operation.getAttribution());
+                }
+            }
+            out.writeBoolean(view.getInput() != null);
+            if (view.getInput() != null) {
+                byte[] input = new ProvenanceCheckpoint(view.getInput(), null).encode(depth + 1);
+                out.writeInt(input.length);
+                out.write(input);
             }
             occurrence(out, lastAcceptedMutation);
             return bytes.toByteArray();
@@ -91,6 +108,13 @@ public final class ProvenanceCheckpoint {
 
     /** Restores existing identities; decoding never allocates a mutation identity. */
     public static ProvenanceCheckpoint decode(byte[] bytes) {
+        return decode(bytes, 0);
+    }
+
+    private static ProvenanceCheckpoint decode(byte[] bytes, int depth) {
+        if (depth > 64) {
+            throw new IllegalArgumentException("Property provenance binding depth exceeded.");
+        }
         try {
             DataInputStream in = new DataInputStream(new ByteArrayInputStream(bytes));
             if (in.readInt() != VERSION) {
@@ -126,12 +150,23 @@ public final class ProvenanceCheckpoint {
             for (int i = 0; i < reasonCount; i++) {
                 reasons.add(string(in));
             }
-            List<EffectiveProvenanceView.ProviderBoundary> boundaries = new ArrayList<>();
+            List<ProviderOperation> boundaries = new ArrayList<>();
             int boundaryCount = count(in);
             for (int i = 0; i < boundaryCount; i++) {
-                boundaries.add(EffectiveProvenanceView.ProviderBoundary.valueOf(string(in)));
+                EffectiveProvenanceView.ProviderBoundary kind = EffectiveProvenanceView.ProviderBoundary.valueOf(string(in));
+                boundaries.add(new ProviderOperation(kind, in.readBoolean() ? attribution(in) : null));
             }
-            ProvenanceCheckpoint result = new ProvenanceCheckpoint(new EffectiveProvenanceView(target, root, source, updates, shadowed, reasons, boundaries), occurrence(in));
+            EffectiveProvenanceView input = null;
+            if (in.readBoolean()) {
+                int length = count(in);
+                if (length > in.available()) {
+                    throw new IllegalArgumentException("Invalid input provenance length.");
+                }
+                byte[] nested = new byte[length];
+                in.readFully(nested);
+                input = decode(nested, depth + 1).getView();
+            }
+            ProvenanceCheckpoint result = new ProvenanceCheckpoint(new EffectiveProvenanceView(target, root, source, updates, shadowed, reasons, boundaries, input), occurrence(in));
             if (in.available() != 0) {
                 throw new IllegalArgumentException("Trailing property provenance checkpoint data.");
             }
@@ -148,20 +183,7 @@ public final class ProvenanceCheckpoint {
         }
         string(out, value.getScope());
         out.writeLong(value.getSequence());
-        Attribution attribution = value.getAttribution();
-        string(out, attribution.getContributor().getDomain());
-        string(out, attribution.getContributor().getKind().name());
-        string(out, attribution.getContributor().getIdentity());
-        string(out, attribution.getOrigin().getKind().name());
-        string(out, attribution.getOrigin().getIdentifier());
-        string(out, attribution.getOrigin().getDisplayName());
-        string(out, attribution.getSourceScope().getBuildIdentity());
-        string(out, attribution.getSourceScope().getScopePath());
-        String token = attribution.getApplicationToken();
-        out.writeBoolean(token != null);
-        if (token != null) {
-            string(out, token);
-        }
+        attribution(out, value.getAttribution());
         string(out, value.getOperation().getKind().name());
         string(out, value.getOperation().getReason());
         out.writeInt(value.getOperation().getShapes().size());
@@ -177,10 +199,7 @@ public final class ProvenanceCheckpoint {
         }
         String scope = string(in);
         long sequence = in.readLong();
-        ContributorKey contributor = new ContributorKey(string(in), ContributorKey.Kind.valueOf(string(in)), string(in));
-        DiagnosticOrigin origin = new DiagnosticOrigin(DiagnosticOrigin.Kind.valueOf(string(in)), string(in), string(in));
-        ScopeIdentity sourceScope = new ScopeIdentity(string(in), string(in));
-        Attribution attribution = new Attribution(contributor, origin, sourceScope, in.readBoolean() ? string(in) : null);
+        Attribution attribution = attribution(in);
         SemanticOperation.Kind kind = SemanticOperation.Kind.valueOf(string(in));
         String reason = string(in);
         SemanticOperation.Shape[] shapes = new SemanticOperation.Shape[count(in)];
@@ -200,6 +219,43 @@ public final class ProvenanceCheckpoint {
             default: throw new IllegalArgumentException("Unknown semantic operation.");
         }
         return new MutationOccurrence(scope, sequence, attribution, operation);
+    }
+
+    private static void attribution(DataOutputStream out, Attribution attribution) throws IOException {
+        string(out, attribution.getContributor().getDomain());
+        string(out, attribution.getContributor().getKind().name());
+        string(out, attribution.getContributor().getIdentity());
+        string(out, attribution.getOrigin().getKind().name());
+        string(out, attribution.getOrigin().getIdentifier());
+        string(out, attribution.getOrigin().getDisplayName());
+        string(out, attribution.getSourceScope().getBuildIdentity());
+        string(out, attribution.getSourceScope().getScopePath());
+        String token = attribution.getApplicationToken();
+        out.writeBoolean(token != null);
+        if (token != null) {
+            string(out, token);
+        }
+        SourceLocation location = attribution.getLocation();
+        out.writeBoolean(location != null);
+        if (location != null) {
+            string(out, location.getFileName());
+            out.writeInt(location.getLine());
+            out.writeBoolean(location.getPath() != null);
+            if (location.getPath() != null) {
+                string(out, location.getPath());
+            }
+        }
+    }
+
+    private static Attribution attribution(DataInputStream in) throws IOException {
+        ContributorKey contributor = new ContributorKey(string(in), ContributorKey.Kind.valueOf(string(in)), string(in));
+        DiagnosticOrigin origin = new DiagnosticOrigin(DiagnosticOrigin.Kind.valueOf(string(in)), string(in), string(in));
+        ScopeIdentity sourceScope = new ScopeIdentity(string(in), string(in));
+        Attribution attribution = new Attribution(contributor, origin, sourceScope, in.readBoolean() ? string(in) : null);
+        if (in.readBoolean()) {
+            attribution = attribution.withLocation(new SourceLocation(string(in), in.readInt(), in.readBoolean() ? string(in) : null));
+        }
+        return attribution;
     }
 
     private static void string(DataOutputStream out, String value) throws IOException {

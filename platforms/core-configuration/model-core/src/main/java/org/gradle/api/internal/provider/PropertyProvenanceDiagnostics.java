@@ -19,7 +19,6 @@ package org.gradle.api.internal.provider;
 import org.gradle.api.internal.provenance.EffectiveProvenanceView;
 import org.gradle.api.internal.provenance.ProvenanceReadSnapshot;
 import org.gradle.api.internal.provenance.FailedOperation;
-import org.gradle.api.internal.provenance.ProvenanceRenderer;
 import org.jspecify.annotations.Nullable;
 
 import java.util.function.Supplier;
@@ -43,7 +42,7 @@ public final class PropertyProvenanceDiagnostics {
             return details;
         }
         try {
-            return details + "\n\n" + ProvenanceRenderer.failure(checkpoint, null);
+            return details + "\n\n" + PropertyProvenanceRenderer.failure(checkpoint, null);
         } catch (RuntimeException unavailable) {
             return details;
         }
@@ -77,7 +76,7 @@ public final class PropertyProvenanceDiagnostics {
     private static RuntimeException annotate(RuntimeException failure, EffectiveProvenanceView checkpoint, @Nullable FailedOperation operation) {
         try {
             if (!reported(failure)) {
-                failure.addSuppressed(new EvaluationContext(ProvenanceRenderer.failure(checkpoint, operation)));
+                failure.addSuppressed(new EvaluationContext(PropertyProvenanceRenderer.failure(checkpoint, operation)));
             }
         } catch (RuntimeException unavailable) {
             // Diagnostics must never replace the evaluation failure, even if a custom cause accessor fails.
@@ -111,7 +110,7 @@ public final class PropertyProvenanceDiagnostics {
             return failure;
         }
         try {
-            return new ReportedMissingValue(failure.getMessage() + "\n\n" + ProvenanceRenderer.failure(view, null), failure);
+            return new ReportedMissingValue(failure.getMessage() + "\n\n" + PropertyProvenanceRenderer.failure(view, null), failure);
         } catch (RuntimeException unavailable) {
             return failure;
         }
@@ -122,13 +121,13 @@ public final class PropertyProvenanceDiagnostics {
             return failure;
         }
         if (failure instanceof IllegalArgumentException) {
-            return new ReportedIllegalArgument(failure.getMessage() + "\n\n" + ProvenanceRenderer.failure(view, operation), failure);
+            return new ReportedIllegalArgument(failure.getMessage() + "\n\n" + PropertyProvenanceRenderer.failure(view, operation), failure);
         }
         if (failure instanceof IllegalStateException) {
-            return new ReportedIllegalState(failure.getMessage() + "\n\n" + ProvenanceRenderer.failure(view, operation), failure);
+            return new ReportedIllegalState(failure.getMessage() + "\n\n" + PropertyProvenanceRenderer.failure(view, operation), failure);
         }
         if (failure instanceof NullPointerException) {
-            return new ReportedNullPointer(failure.getMessage() + "\n\n" + ProvenanceRenderer.failure(view, operation), failure);
+            return new ReportedNullPointer(failure.getMessage() + "\n\n" + PropertyProvenanceRenderer.failure(view, operation), failure);
         }
         return annotate(failure, view, operation);
     }

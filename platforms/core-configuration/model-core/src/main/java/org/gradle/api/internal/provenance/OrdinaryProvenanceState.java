@@ -90,6 +90,10 @@ public final class OrdinaryProvenanceState {
         return finalizedProvenance == null ? currentModelPath : finalizedProvenance.getTarget().getModelPath();
     }
 
+    public boolean hasCheckpoint() {
+        return finalizedProvenance != null;
+    }
+
     public boolean isFinalized() {
         return finalizedProvenance != null && !restored;
     }

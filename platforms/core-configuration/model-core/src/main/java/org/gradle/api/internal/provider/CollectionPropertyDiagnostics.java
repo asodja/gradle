@@ -19,7 +19,6 @@ package org.gradle.api.internal.provider;
 import org.gradle.api.internal.provenance.EffectiveProvenanceView;
 import org.gradle.api.internal.provenance.ProvenanceReadSnapshot;
 import org.gradle.api.internal.provenance.MutationOccurrence;
-import org.gradle.api.internal.provenance.ProvenanceRenderer;
 import org.gradle.api.internal.provenance.ProvenanceCheckpoint;
 import org.gradle.internal.Describables;
 import org.jspecify.annotations.Nullable;
@@ -61,6 +60,6 @@ public interface CollectionPropertyDiagnostics extends RestorableProvenance {
 
     @Override
     default String getConfigurationTrace() {
-        return ProvenanceRenderer.configuration(getEffectiveProvenance());
+        return PropertyProvenanceRenderer.configuration(getEffectiveProvenance());
     }
 }

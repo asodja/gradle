@@ -53,9 +53,9 @@ class DerivedPropertyProvenanceIntegrationTest extends AbstractIntegrationSpec {
 
         then:
         output.contains('MATCH=true')
-        output.contains('through flat_map')
-        output.contains('through map_entry')
-        output.contains(missing ? 'Failure trace to source' : 'VALUE=present')
+        output.contains('flatMap by')
+        output.contains('mapEntry by')
+        output.contains(missing ? 'Configuration of' : 'VALUE=present')
 
         when:
         executer.withArguments('--configuration-cache', '-Dorg.gradle.internal.property-provenance=true', "-Dorg.gradle.unsafe.isolated-projects=${isolated}")
@@ -64,8 +64,8 @@ class DerivedPropertyProvenanceIntegrationTest extends AbstractIntegrationSpec {
         then:
         output.contains('Reusing configuration cache')
         output.contains('MATCH=true')
-        output.contains('through zip')
-        output.contains(missing ? 'Failure trace to source' : 'VALUE=present')
+        output.contains('zip by')
+        output.contains(missing ? 'Configuration of' : 'VALUE=present')
 
         where:
         [isolated, missing] << [[false, true], [false, true]].combinations()
@@ -92,7 +92,7 @@ class DerivedPropertyProvenanceIntegrationTest extends AbstractIntegrationSpec {
             fqid == 'validation:property-validation:value-not-set'
             solutions == ["Assign a value to 'value'", "Mark property 'value' as optional"]
         }
-        errorOutput.contains('Failure trace to source') == enabled
+        errorOutput.contains('Configuration of') == enabled
 
         where:
         enabled << [false, true]
@@ -116,8 +116,8 @@ class DerivedPropertyProvenanceIntegrationTest extends AbstractIntegrationSpec {
 
         then:
         failure.assertHasCause('original transform problem')
-        errorOutput.contains('Failure trace to source')
-        errorOutput.contains('through map')
+        errorOutput.contains('Configuration of')
+        errorOutput.contains('map by')
     }
     def 'derived changing values retain producer dependencies on cache reuse'() {
         given:
@@ -153,7 +153,7 @@ class DerivedPropertyProvenanceIntegrationTest extends AbstractIntegrationSpec {
         then:
         result.assertTasksExecuted(':produce', ':consume')
         output.contains('DERIVED=first-mapped')
-        output.contains('through or_else')
+        output.contains('orElse by')
 
         when:
         file('seed.txt').text = 'second'
@@ -164,7 +164,7 @@ class DerivedPropertyProvenanceIntegrationTest extends AbstractIntegrationSpec {
         output.contains('Reusing configuration cache')
         result.assertTasksExecuted(':produce', ':consume')
         output.contains('DERIVED=second-mapped')
-        output.contains('through map')
+        output.contains('map by')
     }
 
 }

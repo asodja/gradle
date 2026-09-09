@@ -19,7 +19,6 @@ package org.gradle.api.internal.provider;
 import org.gradle.api.Transformer;
 import org.gradle.api.internal.provenance.EffectiveProvenanceView.ProviderBoundary;
 import org.gradle.api.internal.provenance.OrdinaryProvenanceState;
-import org.gradle.api.internal.provenance.ProvenanceRenderer;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.specs.Spec;
 import org.jspecify.annotations.Nullable;
@@ -34,7 +33,7 @@ public final class DiagnosticProvenanceSnapshot<T> extends ProvenanceSnapshot<T>
 
     @Override
     public String getConfigurationTrace() {
-        return ProvenanceRenderer.configuration(getEffectiveProvenance());
+        return PropertyProvenanceRenderer.configuration(getEffectiveProvenance());
     }
 
     @Override

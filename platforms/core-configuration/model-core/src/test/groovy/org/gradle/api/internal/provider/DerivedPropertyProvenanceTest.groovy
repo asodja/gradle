@@ -56,8 +56,8 @@ class DerivedPropertyProvenanceTest extends Specification {
 
         then:
         def failure = thrown(MissingValueException)
-        failure.message.contains('Provider boundaries (partial coverage')
-        failure.message.contains('Known input configuration (not a selected derived source)')
+        !failure.message.contains('Provider transformations:')
+        failure.message.contains(operation in ['flatMap', 'orElse'] ? 'selection unknown' : operation == 'zip' ? 'left input shown; other input not traced' : ' by ')
         failure.message.contains("plugin 'source'")
         provider.configurationTrace == expected
         captures == before
@@ -78,7 +78,7 @@ class DerivedPropertyProvenanceTest extends Specification {
         def before = captures
 
         expect:
-        provider.configurationTrace.contains('flat_map')
+        provider.configurationTrace.contains('flatMap')
         evaluations == 0
         provider.get() == 'left'
         evaluations == 2
@@ -115,7 +115,7 @@ class DerivedPropertyProvenanceTest extends Specification {
         def failure = thrown(MissingValueException)
         failure.message.contains('absent key or an absent map')
         !failure.message.contains('secret-key')
-        map.keySet().configurationTrace.contains('map_keys')
+        map.keySet().configurationTrace.contains('mapKeys')
 
         where:
         missing << [false, true]
@@ -138,7 +138,7 @@ class DerivedPropertyProvenanceTest extends Specification {
         def failure = thrown(UnsupportedOperationException)
         failure.is(original)
         failure.suppressed.size() == 1
-        failure.suppressed[0].message.contains('through map')
+        failure.suppressed[0].message.contains('map by')
         failure.suppressed[0].stackTrace.length == 0
         property.lastAcceptedMutation != before
 
@@ -159,8 +159,8 @@ class DerivedPropertyProvenanceTest extends Specification {
 
         then:
         def failure = thrown(RuntimeException)
-        failure.suppressed[0].message.contains('for before ')
-        !failure.suppressed[0].message.contains('for after ')
+        failure.suppressed[0].message.contains('of before ')
+        !failure.suppressed[0].message.contains('of after ')
     }
 
     def 'failed finalization restores ordinary mutability and retains original exception'() {
@@ -197,7 +197,7 @@ class DerivedPropertyProvenanceTest extends Specification {
 
         then:
         def failure = thrown(RuntimeException)
-        failure.message.contains('Failure trace to source')
+        failure.message.contains('Configuration of')
         failure.cause.class == (operation == 'dynamic' ? IllegalArgumentException : NullPointerException)
         target.lastAcceptedMutation == before
 
@@ -215,7 +215,7 @@ class DerivedPropertyProvenanceTest extends Specification {
         then:
         def failure = thrown(NullPointerException)
         failure.message.contains('failed append')
-        failure.message.count('Failure trace to source') == 1
+        failure.message.count('Configuration of') == 1
     }
 
     def 'plain providers stay undecorated'() {
@@ -227,7 +227,7 @@ class DerivedPropertyProvenanceTest extends Specification {
 
         then:
         def failure = thrown(MissingValueException)
-        !failure.message.contains('Failure trace')
+        !failure.message.contains('Configuration of')
         !(plain.map { it } instanceof ProvenanceAware)
     }
 
@@ -316,7 +316,7 @@ class DerivedPropertyProvenanceTest extends Specification {
 
         then:
         fallback.get() == 'fallback'
-        fallback.configurationTrace.contains('no branch selection')
+        fallback.configurationTrace.contains('selection unknown')
         !fallback.effectiveProvenance.completeLocal
     }
 
@@ -334,7 +334,7 @@ class DerivedPropertyProvenanceTest extends Specification {
 
         then:
         def failure = thrown(MissingValueException)
-        failure.message.contains('Known input configuration')
+        failure.message.contains(operation == 'flatMap' ? 'selection unknown' : operation == 'zip' ? 'left input shown; other input not traced' : ' by ')
         failure.message.contains("plugin 'source'")
         property.get() == 'configured'
         provider.orNull == null
@@ -356,7 +356,7 @@ class DerivedPropertyProvenanceTest extends Specification {
         def failure = thrown(UnsupportedOperationException)
         failure.is(original)
         failure.suppressed.size() == 1
-        failure.suppressed[0].message.contains('through map')
+        failure.suppressed[0].message.contains('map by')
 
         where:
         query << [{ it.get() }, { it.orNull }, { it.getOrElse('fallback') }]
@@ -384,7 +384,7 @@ class DerivedPropertyProvenanceTest extends Specification {
         failure.class == org.gradle.api.InvalidUserCodeException
         failure.message.contains("before task ':producer' has completed")
         failure.suppressed.size() == 1
-        failure.suppressed[0].message.contains('through map')
+        failure.suppressed[0].message.contains('map by')
     }
 
     def 'arbitrary replacement callback failure reports attempted operation without an accepted mutation'() {
@@ -429,7 +429,7 @@ class DerivedPropertyProvenanceTest extends Specification {
         def checkpoint = org.gradle.api.internal.provenance.ProvenanceCheckpoint.decode(PropertyProvenanceTransport.encodeCheckpoint(provider))
 
         then:
-        trace.contains('additional provider boundaries omitted')
+        trace.contains('additional provider transformations omitted')
         checkpoint.view.providerBoundaries.size() == 4096
         checkpoint.view.source.occurrence == property.lastAcceptedMutation
     }
@@ -473,6 +473,26 @@ class DerivedPropertyProvenanceTest extends Specification {
         then:
         value == 'value'
         0 * snapshot._
+    }
+
+    def 'managed isolation preserves a named property binding and its missing derived input'() {
+        given:
+        property.set('source')
+        def bound = factory.property(String)
+        bound.attachOwner(null, Describables.of("task ':check' property 'value'"))
+        bound.set(property.map { it }.filter { false })
+        def expected = bound.configurationTrace
+
+        when:
+        def restored = roundtrip(bound)
+        restored.get()
+
+        then:
+        def failure = thrown(MissingValueException)
+        failure.message.startsWith("Cannot query the value of task ':check' property 'value'")
+        failure.message.contains(expected)
+        restored.configurationTrace == expected
+        restored.effectiveProvenance.input.providerBoundaries*.name() == ['MAP', 'FILTER']
     }
 
     private static def derived(String operation, def source) {

@@ -50,7 +50,7 @@ class DiagnosticPropertyTest extends Specification {
         def target = prepare(anonymous)
 
         expect:
-        target.configurationTrace.contains("Configuration trace to source for 'unnamed property' (")
+        target.configurationTrace.contains("Configuration of 'unnamed property' (")
         !target.configurationTrace.contains(namespace)
         target.effectiveProvenance.source.occurrence.is(occurrence)
 
@@ -59,7 +59,7 @@ class DiagnosticPropertyTest extends Specification {
 
         then:
         def failure = thrown(MissingValueException)
-        failure.message.contains("Failure trace to source for 'unnamed property' (")
+        failure.message.contains("Configuration of 'unnamed property' (")
         !failure.message.contains(namespace)
         anonymous.lastAcceptedMutation.is(occurrence)
 
@@ -84,8 +84,8 @@ class DiagnosticPropertyTest extends Specification {
 
         then:
         report == copiedReport
-        report.contains('Configuration trace to source for extension.message')
-        report.contains("explicit source [plugin 'source'")
+        report.contains('Configuration of extension.message')
+        report.contains("set by plugin 'source'")
         0 * supplier._
         0 * host.currentAttribution()
     }
@@ -102,9 +102,9 @@ class DiagnosticPropertyTest extends Specification {
         then:
         def failure = thrown(MissingValueException)
         failure.cause.class == MissingValueException
-        failure.message.startsWith(failure.cause.message + '\n\nFailure trace to source')
-        failure.message.contains('explicit source')
-        failure.message.contains('Shadowed configuration (not selected)')
+        failure.message.startsWith(failure.cause.message + '\n\nConfiguration of')
+        failure.message.contains('set by')
+        failure.message.contains('Overridden')
         !failure.message.contains('secret fallback')
         property.lastAcceptedMutation.is(accepted)
         0 * host.currentAttribution()
@@ -121,7 +121,7 @@ class DiagnosticPropertyTest extends Specification {
 
         then:
         def failure = thrown(MissingValueException)
-        failure.message.contains('at source (unconfigured)')
+        failure.message.contains('not configured')
         property.lastAcceptedMutation == null
         0 * host.currentAttribution()
     }
@@ -138,8 +138,8 @@ class DiagnosticPropertyTest extends Specification {
 
         then:
         def failure = thrown(MissingValueException)
-        failure.message.contains('at update map')
-        failure.message.contains('at explicit source')
+        failure.message.contains('update map')
+        failure.message.contains('set')
         property.effectiveProvenance.updates.is(before.updates)
 
         where:
@@ -159,9 +159,9 @@ class DiagnosticPropertyTest extends Specification {
         then:
         def failure = thrown(IllegalStateException)
         failure.cause.class == IllegalStateException
-        failure.message.startsWith(failure.cause.message + '\n\nFailure trace to source')
-        failure.message.contains("at failed $operation")
-        failure.message.count('Failure trace to source') == 1
+        failure.message.startsWith(failure.cause.message + '\n\nConfiguration of')
+        failure.message.contains("failed $operation")
+        failure.message.count('Configuration of') == 1
         !failure.message.contains('accepted secret')
         !failure.message.contains('rejected secret')
         property.lastAcceptedMutation.is(accepted)
@@ -196,8 +196,8 @@ class DiagnosticPropertyTest extends Specification {
         1 * host.currentAttribution() >> caller
         def failure = thrown(IllegalArgumentException)
         failure.cause.class == IllegalArgumentException
-        failure.message.contains("failed set [plugin 'caller'")
-        failure.message.contains("explicit source [plugin 'source'")
+        failure.message.contains("failed set by plugin 'caller'")
+        failure.message.contains("set by plugin 'source'")
         property.lastAcceptedMutation.is(accepted)
         property.get()
     }
@@ -212,8 +212,8 @@ class DiagnosticPropertyTest extends Specification {
 
         then:
         def failure = thrown(IllegalStateException)
-        failure.message.contains('failed set [unknown caller origin]')
-        failure.message.contains("explicit source [plugin 'source'")
+        failure.message.contains('failed set by unknown caller')
+        failure.message.contains("set by plugin 'source'")
         0 * host.currentAttribution()
     }
 
@@ -229,7 +229,7 @@ class DiagnosticPropertyTest extends Specification {
         1 * host.currentAttribution() >> { throw new IllegalStateException('diagnostic lookup failed') }
         def failure = thrown(IllegalStateException)
         failure.cause.message == 'The value for this property cannot be changed any further.'
-        failure.message.contains('unknown caller origin')
+        failure.message.contains('unknown caller')
         !failure.message.contains('diagnostic lookup failed')
     }
 
@@ -258,7 +258,7 @@ class DiagnosticPropertyTest extends Specification {
         decorated.cause.is(original)
         decorated.cause.cause.is(cause)
         again.is(decorated)
-        decorated.message.count('Failure trace to source') == 1
+        decorated.message.count('Configuration of') == 1
         property.lastAcceptedMutation == null
     }
 

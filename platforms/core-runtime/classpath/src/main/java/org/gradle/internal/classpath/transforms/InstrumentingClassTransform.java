@@ -77,7 +77,11 @@ public class InstrumentingClassTransform implements ClassTransform {
     /**
      * Decoration format. Increment this when making changes.
      */
-    private static final int DECORATION_FORMAT = 38;
+    private static final int DECORATION_FORMAT = 44;
+
+    public static int getDecorationFormat() {
+        return DECORATION_FORMAT;
+    }
 
     private static final Type INSTRUMENTED_TYPE = getType(Instrumented.class);
     private static final Type BYTECODE_INTERCEPTOR_FILTER_TYPE = Type.getType(BytecodeInterceptorFilter.class);
@@ -102,11 +106,13 @@ public class InstrumentingClassTransform implements ClassTransform {
     private final JvmBytecodeInterceptorSet externalInterceptors;
     private final MethodInterceptionListener methodInterceptionListener;
     private final InstrumentationMetadata instrumentationMetadata;
+    private final @Nullable String sourceRoot;
 
     @Override
     public void applyConfigurationTo(Hasher hasher) {
         hasher.putString(InstrumentingClassTransform.class.getSimpleName());
         hasher.putInt(DECORATION_FORMAT);
+        hasher.putString(sourceRoot == null ? "" : sourceRoot);
     }
 
     public InstrumentingClassTransform() {
@@ -118,6 +124,12 @@ public class InstrumentingClassTransform implements ClassTransform {
     }
 
     public InstrumentingClassTransform(BytecodeInterceptorFilter interceptorFilter, InstrumentationTypeRegistry typeRegistry, MethodInterceptionListener methodInterceptionListener) {
+        this(interceptorFilter, typeRegistry, methodInterceptionListener, null);
+    }
+
+    public InstrumentingClassTransform(BytecodeInterceptorFilter interceptorFilter, InstrumentationTypeRegistry typeRegistry,
+                                      MethodInterceptionListener methodInterceptionListener, @Nullable String sourceRoot) {
+        this.sourceRoot = sourceRoot;
         this.externalInterceptors = CallInterceptorRegistry.getJvmBytecodeInterceptors(interceptorFilter);
         this.methodInterceptionListener = methodInterceptionListener;
         this.instrumentationMetadata = (type, superType) -> typeRegistry.getSuperTypes(type).contains(superType);
@@ -137,6 +149,10 @@ public class InstrumentingClassTransform implements ClassTransform {
         List<JvmBytecodeCallInterceptor> interceptors = buildInterceptors(instrumentationMetadata);
         if (interceptorFilter().matches(ADHOC_INTERCEPTORS)) {
             interceptors = ImmutableList.<JvmBytecodeCallInterceptor>builderWithExpectedSize(interceptors.size() + 1).add(ADHOC_INTERCEPTORS).addAll(interceptors).build();
+        }
+        PropertyCallSiteInterceptor propertyCalls = new PropertyCallSiteInterceptor(instrumentationMetadata, sourceRoot);
+        if (interceptorFilter().matches(propertyCalls)) {
+            interceptors = ImmutableList.<JvmBytecodeCallInterceptor>builder().add(propertyCalls).addAll(interceptors).build();
         }
         return Pair.of(entry.getPath(),
             new InstrumentingVisitor(
@@ -174,6 +190,7 @@ public class InstrumentingClassTransform implements ClassTransform {
         private boolean isInterface;
         private String className;
         private String sourceFileName;
+        private CallSiteSourceMap sourceMap = new CallSiteSourceMap(null, null);
         private boolean hasGroovyCallSites;
 
         public InstrumentingVisitor(
@@ -200,6 +217,7 @@ public class InstrumentingClassTransform implements ClassTransform {
         @Override
         public void visitSource(String source, String debug) {
             this.sourceFileName = source;
+            this.sourceMap = new CallSiteSourceMap(source, debug);
             super.visitSource(source, debug);
         }
 
@@ -344,7 +362,7 @@ public class InstrumentingClassTransform implements ClassTransform {
         }
     }
 
-    private static class InstrumentingMethodVisitor extends MethodVisitorScope {
+    private static class InstrumentingMethodVisitor extends MethodVisitorScope implements CallSiteSource {
         private final InstrumentingVisitor owner;
         private final String className;
         private final Lazy<MethodNode> asNode;
@@ -367,6 +385,16 @@ public class InstrumentingClassTransform implements ClassTransform {
             this.interceptors = owner.interceptors;
             this.interceptorFilter = owner.interceptorFilter;
             this.methodInterceptionListener = owner.methodInterceptionListener;
+        }
+
+        @Override
+        public @Nullable String getSourceFileName() {
+            return sourceFileName;
+        }
+
+        @Override
+        public int getLineNumber() {
+            return owner.sourceMap.originalLine(methodInsLineNumber);
         }
 
         @Override

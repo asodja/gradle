@@ -80,12 +80,14 @@ public class AttributedProperty<T> extends DefaultProperty<T> implements Restora
     /** Reading provenance never queries value presence or producer tasks. */
     @Override
     public ProvenanceReadSnapshot getProvenanceReadSnapshot() {
-        return provenance.readSnapshot(modelPath());
+        ProvenanceReadSnapshot local = provenance.readSnapshot(modelPath());
+        return provenance.hasCheckpoint() || provenance.getUpdates().size() != 0 ? local
+            : PropertyProvenanceTraversal.withInput(this, local, captureSupplier());
     }
 
     @Override
     public EffectiveProvenanceView getEffectiveProvenance() {
-        return provenance.getEffectiveProvenance(modelPath());
+        return getProvenanceReadSnapshot().toView();
     }
 
     @Override
@@ -100,7 +102,7 @@ public class AttributedProperty<T> extends DefaultProperty<T> implements Restora
     @Override
     public void replace(Transformer<? extends @Nullable Provider<? extends T>, ? super Provider<T>> transformation) {
         ProvenanceSnapshot<T> previous = shallowCopy();
-        Provider<? extends T> candidate = transformation.transform(previous);
+        Provider<? extends T> candidate = PropertyCallSites.withoutLocation(() -> transformation.transform(previous));
         if (candidate == null) {
             super.set((T) null);
             return;
@@ -170,10 +172,10 @@ public class AttributedProperty<T> extends DefaultProperty<T> implements Restora
     /** Finalized properties deliberately no longer retain a runtime attribution service. */
     @Nullable
     protected Attribution failureAttribution() {
-        return provenanceHost == null ? null : provenanceHost.currentAttribution();
+        return PropertyCallSites.attribution(provenanceHost == null ? null : provenanceHost.currentAttribution(), this);
     }
 
     private Attribution currentAttribution() {
-        return Objects.requireNonNull(provenanceHost).currentAttribution();
+        return Objects.requireNonNull(PropertyCallSites.attribution(Objects.requireNonNull(provenanceHost).currentAttribution(), this));
     }
 }

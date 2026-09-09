@@ -56,7 +56,8 @@ class BuildSrcBuildListenerFactoryTest extends Specification {
             Stub(AgentStatus),
             Stub(Gradle),
             Stub(PropertyUpgradeReportConfig),
-            ClassLoadTimeInstrumentationComposer.empty()
+            ClassLoadTimeInstrumentationComposer.empty(),
+            Stub(org.gradle.internal.buildoption.InternalOptions)
         )).create()
 
         when:

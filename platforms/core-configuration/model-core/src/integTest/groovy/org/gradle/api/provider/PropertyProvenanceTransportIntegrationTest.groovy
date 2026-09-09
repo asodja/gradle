@@ -147,7 +147,7 @@ class PropertyProvenanceTransportIntegrationTest extends AbstractIntegrationSpec
                             try {
                                 target.get()
                             } catch (Exception failure) {
-                                println 'MISSING_TRACE=' + failure.message.contains('Failure trace to source')
+                                println 'MISSING_TRACE=' + failure.message.contains('Configuration of')
                             }
                         } else {
                             println 'PRESENT=' + target.present
@@ -187,7 +187,7 @@ class PropertyProvenanceTransportIntegrationTest extends AbstractIntegrationSpec
         output.contains('Configuration cache entry stored')
         output.contains('CHECKPOINTS_MATCH=true')
         output.count(missing ? 'MISSING_TRACE=true' : 'PRESENT=true') == 8
-        output.contains("plugin class 'ConfigureProperties'")
+        output.contains("plugin 'ConfigureProperties'")
 
         when:
         executer.withArguments('-Dorg.gradle.internal.property-provenance=true', '--configuration-cache',
@@ -198,7 +198,7 @@ class PropertyProvenanceTransportIntegrationTest extends AbstractIntegrationSpec
         output.contains('Reusing configuration cache')
         output.contains('CHECKPOINTS_MATCH=true')
         output.count(missing ? 'MISSING_TRACE=true' : 'PRESENT=true') == 8
-        output.contains("plugin class 'ConfigureProperties'")
+        output.contains("plugin 'ConfigureProperties'")
 
         where:
         [isolated, missing] << [[false, true], [false, true]].combinations()

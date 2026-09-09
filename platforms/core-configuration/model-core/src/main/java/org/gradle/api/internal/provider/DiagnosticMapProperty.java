@@ -219,7 +219,7 @@ public final class DiagnosticMapProperty<K, V> extends DefaultMapProperty<K, V> 
 
     private void replaceValue(Transformer<? extends @Nullable Provider<? extends Map<? extends K, ? extends V>>, ? super Provider<Map<K, V>>> transformation) {
         CollectionProvenanceSnapshot<Map<K, V>> previous = shallowCopy();
-        Provider<? extends Map<? extends K, ? extends V>> candidate = transformation.transform(previous);
+        Provider<? extends Map<? extends K, ? extends V>> candidate = PropertyCallSites.withoutLocation(() -> transformation.transform(previous));
         if (candidate == null) {
             super.set((Map<? extends K, ? extends V>) null);
             return;

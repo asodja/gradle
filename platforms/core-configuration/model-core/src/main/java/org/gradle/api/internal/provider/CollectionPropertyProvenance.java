@@ -149,7 +149,7 @@ final class CollectionPropertyProvenance {
     }
 
     Attribution attribution() {
-        return java.util.Objects.requireNonNull(host).currentAttribution();
+        return java.util.Objects.requireNonNull(PropertyCallSites.attribution(java.util.Objects.requireNonNull(host).currentAttribution(), this));
     }
 
     void selectedDefault(boolean missing) {
@@ -215,6 +215,7 @@ final class CollectionPropertyProvenance {
             } catch (RuntimeException unavailable) {
                 // Preserve the rejection even when its caller cannot be attributed.
             }
+            caller = PropertyCallSites.attribution(caller, this);
             return PropertyProvenanceDiagnostics.mutation(failure, state.getEffectiveProvenance(modelPath(name)), new FailedOperation(operationName(this.operation == null ? operation : this.operation), caller));
         } catch (RuntimeException unavailable) {
             return failure;

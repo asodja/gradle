@@ -134,7 +134,7 @@ class PropertyAttributionIntegrationTest extends AbstractIntegrationSpec {
         }
         outputContains('inner|PLUGIN_CLASS|example.Inner|:|:|PLUGIN_CLASS')
         outputContains('script|BUILD_AUTHOR||:|:|PROJECT_SCRIPT')
-        !output.contains('Failure trace to source')
+        !output.contains('Configuration of')
     }
 
     def 'root and sibling script bindings keep source scope separate from property ownership'() {
@@ -305,7 +305,7 @@ class PropertyAttributionIntegrationTest extends AbstractIntegrationSpec {
         outputContains('list|DefaultListProperty')
         outputContains('file|DefaultRegularFileVar')
         failure.assertHasCause('The value for this property is final and cannot be changed any further.')
-        !failure.error.contains('Failure trace to source')
+        !failure.error.contains('Configuration of')
     }
 
     private void pluginBuild(String directory, boolean settingsPlugin = false) {

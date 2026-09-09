@@ -33,13 +33,13 @@ class ProvenanceRendererTest extends Specification {
         state.acceptedUpdate(author('second'), update(Shape.MAP), state.source, state.updates)
 
         expect:
-        ProvenanceRenderer.configuration(view()) == """Configuration trace to source for extension.message (build 'build', project ':target'):
-    at update map [plugin 'second'; source build 'build', scope ':source']
-    at update map -> map [plugin 'first'; source build 'build', scope ':source']
-    at explicit source [plugin 'source'; source build 'build', scope ':source']
-Shadowed configuration (not selected):
-    at convention [plugin 'defaults'; source build 'build', scope ':source']
-Local configuration only; provider dependencies and failure causality are not inferred."""
+        ProvenanceRenderer.configuration(view()) == """Configuration of extension.message (build 'build', project ':target'):
+    update map by plugin 'second' [scope ':source']
+    update map -> map by plugin 'first' [scope ':source']
+    set by plugin 'source' [scope ':source']
+
+    Overridden:
+    convention by plugin 'defaults' [scope ':source']"""
     }
 
     def 'failure attempts are report-local and repeated authors are not collapsed'() {
@@ -52,10 +52,10 @@ Local configuration only; provider dependencies and failure causality are not in
         def report = ProvenanceRenderer.failure(view(), new FailedOperation('set', author('caller')))
 
         then:
-        report.startsWith('Failure trace to source')
+        report.startsWith('Configuration of')
         report.indexOf('failed set') < report.indexOf('update map')
         report.count("plugin 'same'") == 2
-        report.contains("failed set [plugin 'caller'")
+        report.contains("failed set by plugin 'caller'")
         state.lastAcceptedMutation.is(accepted)
         state.updates.size() == 2
     }
@@ -70,10 +70,10 @@ Local configuration only; provider dependencies and failure causality are not in
 
         where:
         source                                                                                                                        | reasons  | expected
-        EffectiveProvenanceView.Source.unconfigured()                                                                                  | []       | 'source (unconfigured)'
-        EffectiveProvenanceView.Source.unattributed(EXPLICIT)                                                                           | []       | 'explicit source (unattributed)'
+        EffectiveProvenanceView.Source.unconfigured()                                                                                  | []       | 'not configured'
+        EffectiveProvenanceView.Source.unattributed(EXPLICIT)                                                                           | []       | 'set (unattributed)'
         EffectiveProvenanceView.Source.unavailable(EXPLICIT, 'lost')                                                                    | ['lost'] | 'provenance unavailable: lost'
-        EffectiveProvenanceView.Source.known(EXPLICIT, new MutationOccurrence('p', 0, unknown(), EXPLICIT_BINDING))                       | []       | 'explicit source [unknown origin;'
+        EffectiveProvenanceView.Source.known(EXPLICIT, new MutationOccurrence('p', 0, unknown(), EXPLICIT_BINDING))                       | []       | 'set by unknown origin'
     }
 
     def 'captured convention root is not repeated as shadowed'() {
@@ -82,8 +82,8 @@ Local configuration only; provider dependencies and failure causality are not in
         state.acceptedUpdate(author('update'), update(Shape.MAP), state.source, state.updates)
 
         expect:
-        ProvenanceRenderer.configuration(view()).contains('convention source (captured)')
-        !ProvenanceRenderer.configuration(view()).contains('Shadowed configuration')
+        ProvenanceRenderer.configuration(view()).contains('convention (captured)')
+        !ProvenanceRenderer.configuration(view()).contains('Overridden')
     }
 
     def 'truncation keeps the selected root and partial coverage visible'() {
@@ -95,10 +95,10 @@ Local configuration only; provider dependencies and failure causality are not in
         def report = ProvenanceRenderer.configuration(view())
 
         then:
-        report.count('at update map') == 64
+        report.count('update map') == 64
         report.contains('4032 earlier updates omitted')
-        report.contains("explicit source (unclassified binding) [plugin 'source'")
-        report.contains('Partial local provenance:\n    unsupported local shape')
+        report.contains("set (unclassified binding) by plugin 'source'")
+        report.contains('Coverage notes:\n    unsupported local shape')
         report.length() < 10000
         state.updates.size() == 4096
     }
@@ -114,6 +114,42 @@ Local configuration only; provider dependencies and failure causality are not in
         !report.contains('\n    at forged')
         report.contains('plugin\\n    at forged')
         report.length() < 1200
+    }
+
+    def 'same-scope configuration is concise while cross-build attribution stays explicit'() {
+        given:
+        def scope = new ScopeIdentity(':', ':')
+        def state = new OrdinaryProvenanceState(scope, 'property')
+        def plugin = new Attribution(new ContributorKey('domain', ContributorKey.Kind.PLUGIN_CLASS, 'Locations'),
+            new DiagnosticOrigin(DiagnosticOrigin.Kind.PLUGIN_CLASS, 'Locations', 'Locations'), scope, 'plugin')
+            .withLocation(new SourceLocation('Locations.java', 22))
+        def script = new Attribution(new ContributorKey('domain', ContributorKey.Kind.BUILD_AUTHOR, ''),
+            new DiagnosticOrigin(DiagnosticOrigin.Kind.PROJECT_SCRIPT, '', 'build file'), scope, 'script')
+            .withLocation(new SourceLocation('build.gradle.kts', 4))
+        state.acceptedConvention(plugin, false)
+        state.acceptedBinding(script, EXPLICIT_BINDING)
+
+        expect:
+        ProvenanceRenderer.configuration(state.getEffectiveProvenance("task ':checkLocations' property 'scalar'")) == """Configuration of task ':checkLocations' property 'scalar':
+    set by build script (build.gradle.kts:4)
+
+    Overridden:
+    convention by plugin 'Locations' (Locations.java:22)"""
+
+        when:
+        state.acceptedBinding(new Attribution(plugin.contributor, plugin.origin, new ScopeIdentity(':included', ':other'), 'other'), EXPLICIT_BINDING)
+
+        then:
+        ProvenanceRenderer.configuration(state.getEffectiveProvenance('value')).contains("set by plugin 'Locations' [build ':included', scope ':other']")
+    }
+
+    def 'non-root owners remain identifiable without repeating task project paths'() {
+        given:
+        def state = new OrdinaryProvenanceState(new ScopeIdentity(':included', ':library'), 'property')
+
+        expect:
+        ProvenanceRenderer.configuration(state.getEffectiveProvenance('extension.value')).startsWith("Configuration of extension.value (build ':included', project ':library'):")
+        ProvenanceRenderer.configuration(state.getEffectiveProvenance("task ':library:check' property 'value'")).startsWith("Configuration of task ':library:check' property 'value' (build ':included'):")
     }
 
     private EffectiveProvenanceView view() {

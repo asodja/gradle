@@ -22,11 +22,11 @@ import org.gradle.api.internal.provenance.ContributorKey;
 import org.gradle.api.internal.provenance.DiagnosticOrigin;
 import org.gradle.api.internal.provenance.EffectiveProvenanceView.ProviderBoundary;
 import org.gradle.api.internal.provenance.ProvenanceCheckpoint;
-import org.gradle.api.internal.provenance.ProvenanceRenderer;
 import org.gradle.api.internal.provenance.ScopeIdentity;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.specs.Spec;
 import org.gradle.internal.state.ModelObject;
+import org.gradle.internal.DisplayName;
 import org.jspecify.annotations.Nullable;
 
 import java.util.UUID;
@@ -128,6 +128,12 @@ public final class PropertyProvenanceTransport {
         }
 
         @Override
+        public ProviderInternal<T> asSupplier(DisplayName owner, Class<? super T> targetType, ValueSanitizer<? super T> sanitizer) {
+            ProviderInternal<T> result = super.asSupplier(owner, targetType, sanitizer);
+            return result == this ? this : new TransportedProvider<>(result, checkpoint);
+        }
+
+        @Override
         public org.gradle.api.internal.provenance.EffectiveProvenanceView getEffectiveProvenance() {
             return checkpoint.getView();
         }
@@ -139,7 +145,7 @@ public final class PropertyProvenanceTransport {
 
         @Override
         public String getConfigurationTrace() {
-            return ProvenanceRenderer.configuration(getEffectiveProvenance());
+            return PropertyProvenanceRenderer.configuration(getEffectiveProvenance());
         }
 
         @Override

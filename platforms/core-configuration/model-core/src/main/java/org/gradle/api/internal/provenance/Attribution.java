@@ -24,16 +24,30 @@ import java.util.Objects;
  * Shareable mutation attribution, without authority or runtime application objects. Application tokens are optional diagnostic detail.
  */
 public final class Attribution {
+    private final @Nullable SourceLocation location;
     private final ContributorKey contributor;
     private final DiagnosticOrigin origin;
     private final ScopeIdentity sourceScope;
     private final @Nullable String applicationToken;
 
     public Attribution(ContributorKey contributor, DiagnosticOrigin origin, ScopeIdentity sourceScope, @Nullable String applicationToken) {
+        this(contributor, origin, sourceScope, applicationToken, null);
+    }
+
+    public Attribution(ContributorKey contributor, DiagnosticOrigin origin, ScopeIdentity sourceScope, @Nullable String applicationToken, @Nullable SourceLocation location) {
+        this.location = location;
         this.contributor = Objects.requireNonNull(contributor);
         this.origin = Objects.requireNonNull(origin);
         this.sourceScope = Objects.requireNonNull(sourceScope);
         this.applicationToken = applicationToken;
+    }
+
+    public @Nullable SourceLocation getLocation() {
+        return location;
+    }
+
+    public Attribution withLocation(SourceLocation location) {
+        return new Attribution(contributor, origin, sourceScope, applicationToken, location);
     }
 
     public ContributorKey getContributor() {
@@ -64,11 +78,12 @@ public final class Attribution {
         return Objects.equals(contributor, that.contributor)
             && Objects.equals(origin, that.origin)
             && Objects.equals(sourceScope, that.sourceScope)
-            && Objects.equals(applicationToken, that.applicationToken);
+            && Objects.equals(applicationToken, that.applicationToken)
+            && Objects.equals(location, that.location);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(contributor, origin, sourceScope, applicationToken);
+        return Objects.hash(contributor, origin, sourceScope, applicationToken, location);
     }
 }

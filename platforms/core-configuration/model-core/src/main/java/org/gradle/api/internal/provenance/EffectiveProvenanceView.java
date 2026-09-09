@@ -29,6 +29,7 @@ import java.util.Objects;
  * A live convention root must be resolved by the owner again at each checkpoint, not frozen by reusing a view.
  */
 public final class EffectiveProvenanceView {
+    public static final int INPUT_DEPTH_LIMIT = 32;
     /** Provider operations are context boundaries, never accepted property mutations. */
     public enum ProviderBoundary {
         MAP, FILTER, FLAT_MAP, OR_ELSE, ZIP, MAP_ENTRY, MAP_KEYS
@@ -110,7 +111,8 @@ public final class EffectiveProvenanceView {
         }
     }
 
-    private final List<ProviderBoundary> providerBoundaries;
+    private final @Nullable EffectiveProvenanceView input;
+    private final List<ProviderOperation> providerOperations;
     private final TargetContext target;
     private final RootKind rootKind;
     private final Source source;
@@ -132,9 +134,18 @@ public final class EffectiveProvenanceView {
     public EffectiveProvenanceView(
         TargetContext target, RootKind rootKind, Source source, UpdateSequence updates,
         List<MutationOccurrence> shadowedConfiguration, List<String> partialReasons,
-        List<ProviderBoundary> providerBoundaries
+        List<ProviderOperation> providerOperations
     ) {
-        this.providerBoundaries = Collections.unmodifiableList(new ArrayList<>(providerBoundaries));
+        this(target, rootKind, source, updates, shadowedConfiguration, partialReasons, providerOperations, null);
+    }
+
+    public EffectiveProvenanceView(
+        TargetContext target, RootKind rootKind, Source source, UpdateSequence updates,
+        List<MutationOccurrence> shadowedConfiguration, List<String> partialReasons,
+        List<ProviderOperation> providerOperations, @Nullable EffectiveProvenanceView input
+    ) {
+        this.input = input;
+        this.providerOperations = Collections.unmodifiableList(new ArrayList<>(providerOperations));
         this.target = Objects.requireNonNull(target);
         this.rootKind = Objects.requireNonNull(rootKind);
         this.source = Objects.requireNonNull(source);
@@ -174,14 +185,57 @@ public final class EffectiveProvenanceView {
         return new EffectiveProvenanceView(target, RootKind.CAPTURED, source, updates, shadowed, reasons);
     }
 
+    public @Nullable EffectiveProvenanceView getInput() {
+        return input;
+    }
+
+    public EffectiveProvenanceView withInput(EffectiveProvenanceView upstream) {
+        return new EffectiveProvenanceView(target, rootKind, source, updates, shadowedConfiguration, partialReasons, providerOperations, limitInput(upstream, INPUT_DEPTH_LIMIT - 1));
+    }
+
+    private static EffectiveProvenanceView limitInput(EffectiveProvenanceView view, int remaining) {
+        if (view.input == null) {
+            return view;
+        }
+        EffectiveProvenanceView next = remaining == 0 ? null : limitInput(view.input, remaining - 1);
+        if (next == view.input) {
+            return view;
+        }
+        EffectiveProvenanceView limited = new EffectiveProvenanceView(view.target, view.rootKind, view.source, view.updates,
+            view.shadowedConfiguration, view.partialReasons, view.providerOperations, next);
+        return remaining == 0 ? limited.withPartialReason("Provider binding depth limit; further input configuration omitted.") : limited;
+    }
+
+    public EffectiveProvenanceView withPartialReason(String reason) {
+        List<String> reasons = new ArrayList<>(partialReasons);
+        reasons.add(reason);
+        return new EffectiveProvenanceView(target, rootKind, source, updates, shadowedConfiguration, reasons, providerOperations, input);
+    }
+
     public List<ProviderBoundary> getProviderBoundaries() {
-        return providerBoundaries;
+        List<ProviderBoundary> kinds = new ArrayList<>(providerOperations.size());
+        for (ProviderOperation operation : providerOperations) {
+            kinds.add(operation.getKind());
+        }
+        return Collections.unmodifiableList(kinds);
+    }
+
+    public List<ProviderOperation> getProviderOperations() {
+        return providerOperations;
     }
 
     public EffectiveProvenanceView through(List<ProviderBoundary> nextBoundaries) {
-        List<ProviderBoundary> boundaries = new ArrayList<>(providerBoundaries);
-        boundaries.addAll(nextBoundaries);
-        return new EffectiveProvenanceView(target, rootKind, source, updates, shadowedConfiguration, partialReasons, boundaries);
+        List<ProviderOperation> operations = new ArrayList<>();
+        for (ProviderBoundary boundary : nextBoundaries) {
+            operations.add(new ProviderOperation(boundary, null));
+        }
+        return throughOperations(operations);
+    }
+
+    public EffectiveProvenanceView throughOperations(List<ProviderOperation> nextOperations) {
+        List<ProviderOperation> operations = new ArrayList<>(providerOperations);
+        operations.addAll(nextOperations);
+        return new EffectiveProvenanceView(target, rootKind, source, updates, shadowedConfiguration, partialReasons, operations, input);
     }
 
     public TargetContext getTarget() {
@@ -206,7 +260,7 @@ public final class EffectiveProvenanceView {
 
     /** Complete local coverage says nothing about upstream Provider dependencies or failure causality. */
     public boolean isCompleteLocal() {
-        return partialReasons.isEmpty() && providerBoundaries.isEmpty();
+        return partialReasons.isEmpty() && providerOperations.isEmpty();
     }
 
     public List<String> getPartialReasons() {
